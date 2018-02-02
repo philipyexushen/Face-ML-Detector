@@ -23,6 +23,7 @@ def HaarDetector(model:Model, dataSet = None):
 
     while cap.isOpened():
         _, imgSrc = cap.read()
+        t1 = Clock()
         imgGray = cv.cvtColor(imgSrc, cv.COLOR_BGR2GRAY)
         imgGray = cv.equalizeHist(imgGray)
 
@@ -35,11 +36,11 @@ def HaarDetector(model:Model, dataSet = None):
                 imgCap = imgSrc[y1 - 10: y2 + 10, x1 - 10: x2 + 10]
                 accuracy, resultLabelIdx = model.DetectFace(imgCap)
                 cv.rectangle(imgSrc, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv.putText(imgSrc, dictIdx2NameMap[resultLabelIdx], (x1, y1 + 10), cv.FONT_HERSHEY_PLAIN, 2,
-                           (255, 0, 0), lineType=cv.LINE_AA, thickness=1)
-                #cv.putText(imgSrc, f"accuracy = {accuracy[0]}", (x1, y1 + 30), cv.FONT_HERSHEY_PLAIN, 1.0,
-                #           (255, 0, 0), lineType=cv.LINE_AA)
+                cv.putText(imgSrc, dictIdx2NameMap[resultLabelIdx], (x1, y1 + 20), cv.FONT_HERSHEY_SIMPLEX, 1.5,
+                           (255, 0, 255), lineType=cv.LINE_AA, thickness = 2)
 
+        dt = Clock() - t1
+        DrawStr(imgSrc, (20, 20), 'time: %.1f ms' % (dt * 1000))
         cv.imshow(_winName, imgSrc)
         if cv.waitKey(5) == 27:
             break
@@ -54,12 +55,12 @@ if __name__ == "__main__":
     dataset = DataSet("./capture")
     dataset.Load()
 
-    model = Model()
-    model.Build(dataset)
-    model.Train()
-    model.SaveModel()
     # model = Model()
-    # model.LoadModel()
+    #model.Build(dataset)
+    #model.Train()
+    #model.SaveModel()
+    model = Model()
+    model.LoadModel()
 
     # begin test
     HaarDetector(model,dataset)

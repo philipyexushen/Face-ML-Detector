@@ -7,10 +7,6 @@ _ImageSize = (64, 64, 3)
 def GetOutputImageSize():
     return _ImageSize
 
-def _Clock():
-    return cv.getTickCount() / cv.getTickFrequency()
-
-
 def FindHaarRect(img, cascade):
     rects = cascade.detectMultiScale(img, scaleFactor=1.5, minNeighbors=4, minSize=(30, 30),
                                      flags=cv.CASCADE_SCALE_IMAGE)
@@ -38,12 +34,6 @@ def _StoreCap(img, rects, numCapture, strLabelName):
                 return
 
 
-def drawStr(dst, target, s):
-    x, y = target
-    cv.putText(dst, s, (x+1, y+1), cv.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), thickness = 2, lineType=cv.LINE_AA)
-    cv.putText(dst, s, (x, y), cv.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255), lineType=cv.LINE_AA)
-
-
 def CaptureTrainingSet():
     strLabelName = str()
     while len(strLabelName) == 0:
@@ -64,16 +54,16 @@ def CaptureTrainingSet():
         imgGray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         imgGray = cv.equalizeHist(imgGray)
 
-        t1 = _Clock()
+        t1 = Clock()
         rects = FindHaarRect(imgGray, cascade)
         _StoreCap(img, rects, numCapture, strLabelName)
         vis = img.copy()
         _DrawRects(vis, rects, (0, 255, 0))
 
-        dt = _Clock() - t1
+        dt = Clock() - t1
 
-        drawStr(vis, (20, 20), 'time: %.1f ms' % (dt * 1000))
-        drawStr(vis, (20, 40), f"Have captured {numCapture[0]} faces")
+        DrawStr(vis, (20, 20), 'time: %.1f ms' % (dt * 1000))
+        DrawStr(vis, (20, 40), f"Have captured {numCapture[0]} faces")
         cv.imshow("Image Collector", vis)
         if cv.waitKey(5) == 27:
             break
