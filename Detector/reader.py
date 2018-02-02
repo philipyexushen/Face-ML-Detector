@@ -24,11 +24,14 @@ def _DrawRects(img, rects, color):
     for x1, y1, x2, y2 in rects:
         cv.rectangle(img, (x1, y1), (x2, y2), color, 2)
 
-def _StoreCap(img, rects, numCapture):
+def _StoreCap(img, rects, numCapture, strLabelName):
     if len(rects) > 0:
-        for x1, y1, x2, y2 in rects: 
+        for x1, y1, x2, y2 in rects:
+            if x1 < 10 or x2 < 10 or y1 < 10 or y2 < 10:
+                continue
+
             imgCap = img[y1 - 10:y2 + 10,x1 - 10: x2 + 10]
-            cv.imwrite(f"./capture/{numCapture[0]}.jpg", imgCap)
+            cv.imwrite(f"./capture/{strLabelName}/{numCapture[0]}.jpg", imgCap)
 
             numCapture[0] += 1
             if numCapture[0] > _maxCapture:
@@ -42,6 +45,11 @@ def drawStr(dst, target, s):
 
 
 def CaptureTrainingSet():
+    strLabelName = str()
+    while len(strLabelName) == 0:
+        print("Please input data set label name")
+        strLabelName = input()
+
     cv.namedWindow("Image Collector")
     cascade = cv.CascadeClassifier("./haar_detector/haarcascade_frontalface_alt2.xml")
     cap = cv.VideoCapture(cameraIdx)
@@ -58,7 +66,7 @@ def CaptureTrainingSet():
 
         t1 = _Clock()
         rects = FindHaarRect(imgGray, cascade)
-        _StoreCap(img, rects, numCapture)
+        _StoreCap(img, rects, numCapture, strLabelName)
         vis = img.copy()
         _DrawRects(vis, rects, (0, 255, 0))
 

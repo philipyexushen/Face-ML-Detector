@@ -29,11 +29,14 @@ def HaarDetector(model:Model, dataSet = None):
         rects = FindHaarRect(imgGray, cascade)
         if len(rects) > 0:
             for x1, y1, x2, y2 in rects:
+                if x1 < 10 or x2 < 10 or y1 < 10 or y2 < 10:
+                    continue
+
                 imgCap = imgSrc[y1 - 10: y2 + 10, x1 - 10: x2 + 10]
                 accuracy, resultLabelIdx = model.DetectFace(imgCap)
                 cv.rectangle(imgSrc, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv.putText(imgSrc, dictIdx2NameMap[resultLabelIdx], (x1, y1 + 10), cv.FONT_HERSHEY_PLAIN, 1.0,
-                           (255, 0, 0), lineType=cv.LINE_AA)
+                cv.putText(imgSrc, dictIdx2NameMap[resultLabelIdx], (x1, y1 + 10), cv.FONT_HERSHEY_PLAIN, 2,
+                           (255, 0, 0), lineType=cv.LINE_AA, thickness=1)
                 #cv.putText(imgSrc, f"accuracy = {accuracy[0]}", (x1, y1 + 30), cv.FONT_HERSHEY_PLAIN, 1.0,
                 #           (255, 0, 0), lineType=cv.LINE_AA)
 
@@ -47,6 +50,7 @@ def HaarDetector(model:Model, dataSet = None):
 
 if __name__ == "__main__":
     print(keras.backend.image_dim_ordering())
+    # CaptureTrainingSet()
     dataset = DataSet("./capture")
     dataset.Load()
 
@@ -58,5 +62,5 @@ if __name__ == "__main__":
     # model.LoadModel()
 
     # begin test
-    HaarDetector(model,dataset )
+    HaarDetector(model,dataset)
 

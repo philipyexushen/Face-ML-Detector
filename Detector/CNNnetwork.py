@@ -144,7 +144,7 @@ class Model:
         dataGen.fit(self.dataSet.trainImages)
         self.model.fit_generator(dataGen.flow(self.dataSet.trainImages, self.dataSet.trainLabels,
                                               batch_size=20),
-                                 epochs=1,
+                                 epochs=2,
                                  steps_per_epoch=self.dataSet.trainImages.shape[0],
                                  validation_data=(self.dataSet.validImages, self.dataSet.validLabels))
 
