@@ -1,14 +1,17 @@
 #-*- coding: utf-8 -*-
-import cv2.cv2 as cv
+from common import *
 
-_cameraIdx = 0
 _maxCapture = 4000
+_ImageSize = (64, 64, 3)
 
-def _clock():
+def GetOutputImageSize():
+    return _ImageSize
+
+def _Clock():
     return cv.getTickCount() / cv.getTickFrequency()
 
 
-def _Detect(img, cascade):
+def FindHaarRect(img, cascade):
     rects = cascade.detectMultiScale(img, scaleFactor=1.5, minNeighbors=4, minSize=(30, 30),
                                      flags=cv.CASCADE_SCALE_IMAGE)
     if len(rects) == 0:
@@ -32,7 +35,7 @@ def _StoreCap(img, rects, numCapture):
                 return
 
 
-def draw_str(dst, target, s):
+def drawStr(dst, target, s):
     x, y = target
     cv.putText(dst, s, (x+1, y+1), cv.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), thickness = 2, lineType=cv.LINE_AA)
     cv.putText(dst, s, (x, y), cv.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255), lineType=cv.LINE_AA)
@@ -41,7 +44,7 @@ def draw_str(dst, target, s):
 def CaptureTrainingSet():
     cv.namedWindow("Image Collector")
     cascade = cv.CascadeClassifier("./haar_detector/haarcascade_frontalface_alt2.xml")
-    cap = cv.VideoCapture(_cameraIdx)
+    cap = cv.VideoCapture(cameraIdx)
 
     if cap is None or not cap.isOpened():
         print("video can not open")
@@ -49,25 +52,60 @@ def CaptureTrainingSet():
 
     numCapture = [0]
     while cap.isOpened() and numCapture[0] <= _maxCapture:
-        ret, img = cap.read()
+        _, img = cap.read()
         imgGray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         imgGray = cv.equalizeHist(imgGray)
 
-        t1 = _clock()
-        rects = _Detect(imgGray, cascade)
+        t1 = _Clock()
+        rects = FindHaarRect(imgGray, cascade)
         _StoreCap(img, rects, numCapture)
         vis = img.copy()
         _DrawRects(vis, rects, (0, 255, 0))
 
-        dt = _clock() - t1
+        dt = _Clock() - t1
 
-        draw_str(vis, (20, 20), 'time: %.1f ms' % (dt * 1000))
-        draw_str(vis, (20, 40), f"Have captured {numCapture[0]} faces")
+        drawStr(vis, (20, 20), 'time: %.1f ms' % (dt * 1000))
+        drawStr(vis, (20, 40), f"Have captured {numCapture[0]} faces")
         cv.imshow("Image Collector", vis)
         if cv.waitKey(5) == 27:
             break
 
     cap.release()
     cv.destroyAllWindows()
+
+
+_NumOfLabel = 0
+
+def _LoadDataInternal(filePath: str, tableImage:list, tableLabelIdx:list, dictNameLabel:dict, curLabelName: str):
+    for itemName in os.listdir(filePath):
+        absItemPath = os.path.abspath(os.path.join(filePath, itemName))
+
+        if os.path.isdir(absItemPath):
+            _LoadDataInternal(absItemPath, tableImage, tableLabelIdx, dictNameLabel, itemName)
+        elif itemName.endswith(".jpg"):
+            img = cv.imread(absItemPath)
+
+            img = cv.resize(img, _ImageSize[:2])
+
+            tableImage.append(img)
+            if curLabelName in dictNameLabel:
+                tableLabelIdx.append(dictNameLabel[curLabelName])
+            else:
+                global _NumOfLabel
+                dictNameLabel.update({curLabelName : _NumOfLabel})
+                tableLabelIdx.append(dictNameLabel[curLabelName])
+                _NumOfLabel += 1
+
+
+def LoadData(filePath: str = "./capture"):
+    global _NumOfLabel
+    _NumOfLabel = 0
+
+    tableImage = list()
+    tableLabelIdx = list()
+    dictNameLabel = dict()
+    _LoadDataInternal(filePath, tableImage, tableLabelIdx, dictNameLabel, "_")
+
+    return np.array(tableImage), np.array(tableLabelIdx), _NumOfLabel, dictNameLabel
 
 

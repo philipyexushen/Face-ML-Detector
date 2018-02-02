@@ -1,6 +1,11 @@
+#-*- coding: utf-8 -*-
 import numpy as np
-import cv2.cv2 as cv
+import os
 from numba import jit
+import cv2 as cv
+import matplotlib.pyplot as plt
+
+cameraIdx = 0
 
 def MethodInformProvider(method):
     def _decorator(*args, **kwargs):
