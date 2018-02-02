@@ -7,15 +7,6 @@ _ImageSize = (64, 64, 3)
 def GetOutputImageSize():
     return _ImageSize
 
-def FindHaarRect(img, cascade):
-    rects = cascade.detectMultiScale(img, scaleFactor=1.5, minNeighbors=4, minSize=(30, 30),
-                                     flags=cv.CASCADE_SCALE_IMAGE)
-    if len(rects) == 0:
-        return []
-    rects[:,2:] += rects[:,:2]
-    return rects
-
-
 def _DrawRects(img, rects, color):
     for x1, y1, x2, y2 in rects:
         cv.rectangle(img, (x1, y1), (x2, y2), color, 2)
@@ -39,6 +30,7 @@ def CaptureTrainingSet():
     while len(strLabelName) == 0:
         print("Please input data set label name")
         strLabelName = input()
+    os.mkdir(f"./capture/{strLabelName}")
 
     cv.namedWindow("Image Collector")
     cascade = cv.CascadeClassifier("./haar_detector/haarcascade_frontalface_alt2.xml")

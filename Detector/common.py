@@ -19,10 +19,21 @@ def MethodInformProvider(method):
         return ret
     return _decorator
 
+
 def Clock():
     return cv.getTickCount() / cv.getTickFrequency()
+
 
 def DrawStr(dst, target, s):
     x, y = target
     cv.putText(dst, s, (x+1, y+1), cv.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), thickness = 2, lineType=cv.LINE_AA)
     cv.putText(dst, s, (x, y), cv.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255), lineType=cv.LINE_AA)
+
+
+def FindHaarRect(img, cascade):
+    rects = cascade.detectMultiScale(img, scaleFactor=1.5, minNeighbors=4, minSize=(30, 30),
+                                     flags=cv.CASCADE_SCALE_IMAGE)
+    if len(rects) == 0:
+        return []
+    rects[:,2:] += rects[:,:2]
+    return rects
