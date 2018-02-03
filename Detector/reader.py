@@ -66,7 +66,7 @@ def CaptureTrainingSet():
 
 _NumOfLabel = 0
 
-def _LoadDataInternal(filePath: str, tableImage:list, tableLabelIdx:list, dictNameLabel:dict, curLabelName: str):
+def _LoadDataInternal(filePath:str, tableImage:list, tableLabelIdx:list, dictNameLabel:dict, curLabelName:str):
     for itemName in os.listdir(filePath):
         absItemPath = os.path.abspath(os.path.join(filePath, itemName))
 

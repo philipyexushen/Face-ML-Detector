@@ -3,6 +3,7 @@ import numpy as np
 import os
 from numba import jit
 import cv2 as cv
+import signal
 import matplotlib.pyplot as plt
 
 cameraIdx = 0

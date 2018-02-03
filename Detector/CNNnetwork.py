@@ -1,6 +1,4 @@
 #-*- coding: utf-8 -*-
-from common import *
-import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D
@@ -11,6 +9,7 @@ import random
 import keras
 from keras.utils import np_utils
 from keras.optimizers import SGD
+from common import *
 
 _MODEL_PATH = './FaceModel.h5'
 
@@ -52,18 +51,13 @@ class DataSet:
         print(validImages.shape[0], 'valid samples')
         print(testImages.shape[0], 'test samples')
 
-        # 我们的模型使用categorical_crossentropy作为损失函数，因此需要根据类别数量nb_classes将
-        # 类别标签进行one-hot编码使其向量化，在这里我们的类别只有两种，经过转化后标签数据变为二维
         trainLabels = np_utils.to_categorical(trainLabels, numClasses)
         validLabels = np_utils.to_categorical(validLabels, numClasses)
         testLabels = np_utils.to_categorical(testLabels, numClasses)
 
-        # 像素数据浮点化以便归一化
         trainImages = trainImages.astype('float32')
         validImages = validImages.astype('float32')
         testImages = testImages.astype('float32')
-
-        # 将其归一化,图像的各像素值归一化到0~1区间
         cv.normalize(trainImages, trainImages, 0, 1, cv.NORM_MINMAX)
         cv.normalize(validImages, validImages, 0, 1, cv.NORM_MINMAX)
         cv.normalize(testImages, testImages, 0, 1, cv.NORM_MINMAX)

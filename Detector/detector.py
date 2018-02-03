@@ -1,10 +1,9 @@
 #-*- coding: utf-8 -*-
-from common import *
 from reader import *
-import keras
 from CNNnetwork import *
+from common import *
 
-_winName = "Shrimp Dumpling Classifier"
+_winName = "Hargow Classifier"
 
 def HaarDetector(model:Model, dataSet = None):
     def _CreateIdx2NameMap(dictNameLabel:dict):
@@ -28,6 +27,11 @@ def HaarDetector(model:Model, dataSet = None):
         imgGray = cv.equalizeHist(imgGray)
 
         rects = FindHaarRect(imgGray, cascade)
+
+        dt = Clock() - t1
+        DrawStr(imgSrc, (20, 20), 'Haar detector time: %.1f ms' % (dt * 1000))
+
+        t1 = Clock()
         if len(rects) > 0:
             for x1, y1, x2, y2 in rects:
                 if x1 < 10 or x2 < 10 or y1 < 10 or y2 < 10:
@@ -40,7 +44,7 @@ def HaarDetector(model:Model, dataSet = None):
                            (255, 0, 255), lineType=cv.LINE_AA, thickness = 2)
 
         dt = Clock() - t1
-        DrawStr(imgSrc, (20, 20), 'time: %.1f ms' % (dt * 1000))
+        DrawStr(imgSrc, (20, 40), 'Cnn detector time: %.1f ms' % (dt * 1000))
         cv.imshow(_winName, imgSrc)
         if cv.waitKey(5) == 27:
             break
@@ -50,7 +54,7 @@ def HaarDetector(model:Model, dataSet = None):
 
 
 if __name__ == "__main__":
-    print(keras.backend.image_dim_ordering())
+    # print(keras.backend.image_dim_ordering())
     # CaptureTrainingSet()
     dataset = DataSet("./capture")
     dataset.Load()
