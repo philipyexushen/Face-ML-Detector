@@ -267,7 +267,7 @@ def classifier(base_layers, input_rois, num_rois, nb_classes, alpha=1.0, depth_m
 
     out = _depthwise_separable_conv_block_td(out_roi_pool, 1024, alpha, depth_multiplier, input_shape, strides=(2, 2), block_id=12, trainable=trainable)
     out = _depthwise_separable_conv_block_td(out, 1024, alpha, depth_multiplier, block_id=13, trainable=trainable)
-    out = TimeDistributed(GlobalAveragePooling2D(), name="avg1")(out)
+    out = TimeDistributed(AveragePooling2D((7, 7)), name='avg_pool')(out)
     out = TimeDistributed(Flatten(), name='flatten')(out)
     out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'), name='dense_class_{}'.format(nb_classes))(out)
     # note: no regression target for bg class

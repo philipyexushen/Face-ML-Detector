@@ -137,7 +137,7 @@ losses = np.zeros((epoch_length, 5))
 rpn_accuracy_for_epoch = []
 start_time = time.time()
 
-best_loss = 4
+best_loss = 3.4
 
 class_mapping_inv = {v: k for k, v in class_mapping.items()}
 print('Starting training')
