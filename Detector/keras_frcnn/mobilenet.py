@@ -17,17 +17,9 @@ from keras.applications import resnet50
 
 from keras_frcnn.RoiPoolingConv import RoiPoolingConv
 
-def get_weight_path():
-    if K.image_dim_ordering() == 'th':
-        raise RuntimeError('Only TensorFlow backend is currently supported, '
-                           'as other backends do not support '
-                           'depthwise convolution.')
-    else:
-        return 'mobilenet_7_5_224_tf_no_top.h5'
-
 def get_img_output_length(width, height):
     def get_output_length(input_length):
-        filter_sizes = [1, 1, 1, 1, 1]
+        filter_sizes = [1, 1, 1, 1]
         stride = 2
         for filter_size in filter_sizes:
             input_length = (input_length - filter_size + stride) // stride
@@ -166,7 +158,7 @@ def _depthwise_separable_conv_block(inputs, pointwise_conv_filters, alpha,
     pointwise_conv_filters = int(pointwise_conv_filters * alpha)
 
     # 论文中的Depthwise还有个rho参数，但是这里没有，kearas是对输入图像的第三个通道进行了处理
-    x = DepthwiseConv2D((3, 3),
+    x =  DepthwiseConv2D((3, 3),
                         padding='same',
                         depth_multiplier=depth_multiplier,
                         strides=strides,
@@ -185,7 +177,31 @@ def _depthwise_separable_conv_block(inputs, pointwise_conv_filters, alpha,
                strides=(1, 1),
                name='conv_pw_%d' % block_id, trainable=True)(x)
     x = BatchNormalization(axis=channel_axis, name='conv_pw_%d_bn' % block_id, trainable=trainable)(x)
-    return Activation(relu6, name='conv_pw_%d_relu' % block_id, trainable=trainable)(x)
+    return Activation(relu6, name='conv_pw_%d_relu' % block_id)(x)
+
+def _depthwise_separable_conv_block_td(inputs, pointwise_conv_filters, alpha,
+                                        depth_multiplier=1, input_shape=None, strides=(1, 1), block_id=1, trainable = True):
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+    pointwise_conv_filters = int(pointwise_conv_filters * alpha)
+
+    if input_shape is not None:
+        x = TimeDistributed(DepthwiseConv2D((3, 3), padding='same', depth_multiplier=depth_multiplier, strides=strides,
+                            use_bias=False), input_shape=input_shape, name='conv_dw_%d' % block_id, trainable= trainable)(inputs)
+    else:
+        x = TimeDistributed(DepthwiseConv2D((3, 3), padding='same', depth_multiplier=depth_multiplier, strides=strides,
+                            use_bias=False), name='conv_dw_%d' % block_id, trainable= trainable)(inputs)
+
+    x = TimeDistributed(BatchNormalization(axis=channel_axis),name='conv_dw_%d_bn' % block_id, trainable=trainable)(x)
+    x = TimeDistributed(Activation(relu6), name='conv_dw_%d_relu' % block_id, trainable=trainable)(x)
+
+    x = TimeDistributed(Conv2D(pointwise_conv_filters, (1, 1),
+               padding='same',
+               use_bias=False,
+               strides=(1, 1)),
+               name='conv_pw_%d' % block_id, trainable=True)(x)
+    x = TimeDistributed(BatchNormalization(axis=channel_axis), name='conv_pw_%d_bn' % block_id, trainable=trainable)(x)
+    return TimeDistributed(Activation(relu6), name='conv_pw_%d_relu' % block_id)(x)
+
 
 def _conv_block(inputs, filters, alpha, kernel=(3, 3), strides=(1, 1), trainable = True):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
@@ -227,8 +243,6 @@ def nn_base(input_tensor=None,alpha=1.0, depth_multiplier=1, trainable=False):
     x = _depthwise_separable_conv_block(x, 512, alpha, depth_multiplier, block_id=9, trainable=trainable)
     x = _depthwise_separable_conv_block(x, 512, alpha, depth_multiplier, block_id=10, trainable=trainable)
     x = _depthwise_separable_conv_block(x, 512, alpha, depth_multiplier, block_id=11, trainable=trainable)
-    x = _depthwise_separable_conv_block(x, 1024, alpha, depth_multiplier, strides=(2, 2), block_id=12, trainable=trainable)
-    x = _depthwise_separable_conv_block(x, 1024, alpha, depth_multiplier, block_id=13, trainable=trainable)
     return x
 
 def rpn(base_layers,num_anchors):
@@ -238,7 +252,7 @@ def rpn(base_layers,num_anchors):
 
     return [x_class, x_regr, base_layers]
 
-def classifier(base_layers, input_rois, num_rois, nb_classes = 21, trainable=False):
+def classifier(base_layers, input_rois, num_rois, nb_classes, alpha=1.0, depth_multiplier=1, trainable=False):
     # compile times on theano tend to be very high, so we use smaller ROI pooling regions to workaround
     pooling_regions = -1
     input_shape = -1
@@ -250,12 +264,10 @@ def classifier(base_layers, input_rois, num_rois, nb_classes = 21, trainable=Fal
         input_shape = (num_rois,1024,7,7)
 
     out_roi_pool = RoiPoolingConv(pooling_regions, num_rois)([base_layers, input_rois])
-    out = TimeDistributed(Conv2D(1024, (1, 1), padding='same', name='dense_class_{}'.format(2048)),input_shape=input_shape,
-                          trainable=trainable)(out_roi_pool)
-    out = TimeDistributed(GlobalAveragePooling2D(), name="avg1")(out)
-    out = TimeDistributed(Dense(1024, name='reshape_1024'), trainable=trainable)(out)
-    out = TimeDistributed(Dropout(0.5, name='dropout'), trainable=trainable)(out)
 
+    out = _depthwise_separable_conv_block_td(out_roi_pool, 1024, alpha, depth_multiplier, input_shape, strides=(2, 2), block_id=12, trainable=trainable)
+    out = _depthwise_separable_conv_block_td(out, 1024, alpha, depth_multiplier, block_id=13, trainable=trainable)
+    out = TimeDistributed(GlobalAveragePooling2D(), name="avg1")(out)
     out = TimeDistributed(Flatten(), name='flatten')(out)
     out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'), name='dense_class_{}'.format(nb_classes))(out)
     # note: no regression target for bg class

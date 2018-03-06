@@ -100,8 +100,8 @@ print(class_mapping)
 class_to_color = {class_mapping[v]: np.random.randint(0, 255, 3) for v in class_mapping}
 C.num_rois = int(options.num_rois)
 
-alpha = 1
-num_features = 1024 * alpha
+alpha = 0.75
+num_features = int(512 * alpha)
 input_shape_img = (None, None, 3)
 input_shape_features = (None, None, num_features)
 
@@ -124,7 +124,7 @@ num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
 rpn_layers = nn.rpn(shared_layers, num_anchors)
 
 # 注意这里，train的时候训练是包含share_layer的，这只是faster-rcnn训练的时候权值共享的问题，训练完以后就可以直接用输出了
-classifier = nn.classifier(feature_map_input, roi_input, C.num_rois, nb_classes=len(class_mapping), trainable=True)
+classifier = nn.classifier(feature_map_input, roi_input, C.num_rois, nb_classes=len(class_mapping), alpha=alpha, trainable=True)
 
 model_rpn = Model(img_input, rpn_layers)
 model_classifier = Model([feature_map_input, roi_input], classifier)
@@ -152,6 +152,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     print(img_name)
     filepath = os.path.join(img_path,img_name)
 '''
+
 
 while cap.isOpened():
     #img = cv2.imread(filepath)
