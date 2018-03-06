@@ -3,10 +3,16 @@
     <words>
       <w>crossentropy</w>
       <w>dataset</w>
+      <w>depthwise</w>
       <w>haar</w>
       <w>hargow</w>
+      <w>pointwise</w>
       <w>rects</w>
+      <w>regr</w>
       <w>relu</w>
+      <w>resnet</w>
+      <w>tensorflow</w>
+      <w>theano</w>
     </words>
   </dictionary>
 </component>

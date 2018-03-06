@@ -2,6 +2,7 @@
 from reader import *
 from CNNnetwork import *
 from common import *
+import ffmpeg
 
 _winName = "Hargow Classifier"
 
@@ -55,7 +56,22 @@ def HaarDetector(model:Model, dataSet = None):
 
 if __name__ == "__main__":
     # print(keras.backend.image_dim_ordering())
-    # CaptureTrainingSet()
+    CaptureTrainingSet(outputType=OutputVOCData)
+
+    '''
+        cap = cv.VideoCapture(0)
+    index = 0
+    cv.namedWindow("hello world")
+    while cap.isOpened():
+        _, img = cap.read()
+
+        cv.imshow("hello world", img)
+        cv.waitKey(5)
+        cv.imwrite(f"E:\\Users\\Administrator\\pictures\\Test\\cap\\{index}.jpg", img)
+        index += 1
+    '''
+
+
     dataset = DataSet("./capture")
     dataset.Load()
 
