@@ -11,9 +11,6 @@ from keras.utils import conv_utils
 from keras import initializers, regularizers, constraints
 from keras.engine import InputSpec
 from keras import backend as K
-from keras.applications import mobilenet
-from keras.applications import nasnet
-from keras.applications import resnet50
 
 from keras_frcnn.RoiPoolingConv import RoiPoolingConv
 
@@ -168,7 +165,7 @@ def _depthwise_separable_conv_block(inputs, pointwise_conv_filters, alpha,
 
     # 请看Batch Normalization那篇论文（arXiv:1502.03167）
     x = BatchNormalization(axis=channel_axis, name='conv_dw_%d_bn' % block_id, trainable=trainable)(x)
-    x = Activation(relu6, name='conv_dw_%d_relu' % block_id, trainable=trainable)(x)
+    x = Activation(relu6, name='conv_dw_%d_relu' % block_id)(x)
 
     # 论文中的pointwise convolutions，1x1大小的卷积核
     x = Conv2D(pointwise_conv_filters, (1, 1),
@@ -192,7 +189,7 @@ def _depthwise_separable_conv_block_td(inputs, pointwise_conv_filters, alpha,
                             use_bias=False), name='conv_dw_%d' % block_id, trainable= trainable)(inputs)
 
     x = TimeDistributed(BatchNormalization(axis=channel_axis),name='conv_dw_%d_bn' % block_id, trainable=trainable)(x)
-    x = TimeDistributed(Activation(relu6), name='conv_dw_%d_relu' % block_id, trainable=trainable)(x)
+    x = TimeDistributed(Activation(relu6), name='conv_dw_%d_relu' % block_id)(x)
 
     x = TimeDistributed(Conv2D(pointwise_conv_filters, (1, 1),
                padding='same',
@@ -245,12 +242,14 @@ def nn_base(input_tensor=None,alpha=1.0, depth_multiplier=1, trainable=False):
     x = _depthwise_separable_conv_block(x, 512, alpha, depth_multiplier, block_id=11, trainable=trainable)
     return x
 
+
 def rpn(base_layers,num_anchors):
     x = Convolution2D(512, (3, 3), padding='same', activation='relu', kernel_initializer='normal', name='rpn_conv1')(base_layers)
     x_class = Convolution2D(num_anchors, (1, 1), activation='sigmoid', kernel_initializer='uniform', name='rpn_out_class')(x)
     x_regr = Convolution2D(num_anchors * 4, (1, 1), activation='linear', kernel_initializer='zero', name='rpn_out_regress')(x)
 
     return [x_class, x_regr, base_layers]
+
 
 def classifier(base_layers, input_rois, num_rois, nb_classes, alpha=1.0, depth_multiplier=1, trainable=False):
     # compile times on theano tend to be very high, so we use smaller ROI pooling regions to workaround

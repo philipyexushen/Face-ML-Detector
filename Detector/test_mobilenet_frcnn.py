@@ -100,7 +100,7 @@ print(class_mapping)
 class_to_color = {class_mapping[v]: np.random.randint(0, 255, 3) for v in class_mapping}
 C.num_rois = int(options.num_rois)
 
-alpha = 0.75
+alpha = 1
 num_features = int(512 * alpha)
 input_shape_img = (None, None, 3)
 input_shape_features = (None, None, num_features)
@@ -140,7 +140,7 @@ all_imgs = []
 
 classes = {}
 
-bbox_threshold = 0.8
+bbox_threshold = 0.7
 
 visualise = True
 #cap = cv2.VideoCapture(0)

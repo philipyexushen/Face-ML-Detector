@@ -1,0 +1,12 @@
+<data>
+    <p>
+        Mean number of bounding boxes from RPN overlapping ground truth boxes: 16.523952095808383
+        Classifier accuracy for bounding boxes from RPN: 0.7371875
+        Loss RPN classifier: 1.6514391001176272
+        Loss RPN regression: 0.1713794287694618
+        Loss Detector classifier: 0.9397003030478954
+        Loss Detector regression: 0.2799894463401288
+        Elapsed time: 1856.4058728218079
+        loss = 3.0425082782751134
+    </p>
+</data>
