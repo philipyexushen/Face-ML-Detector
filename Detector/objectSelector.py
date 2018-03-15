@@ -2,6 +2,8 @@ import lxml.etree as ET
 import os
 import shutil
 
+_maxCount = 5000
+
 def SelectSpecialItem(inputPath:str, outputPath:str, lstTypeName):
     data_paths = [os.path.join(inputPath, s) for s in ['VOC2007', 'VOC2012']]
     output_data_paths = [os.path.join(outputPath, s) for s in ['VOC2007', 'VOC2012']]
@@ -9,6 +11,8 @@ def SelectSpecialItem(inputPath:str, outputPath:str, lstTypeName):
 
     if not os.path.isdir(outputPath):
         os.mkdir(outputPath)
+
+    dictItemCount = { name : 0  for name in lstTypeName }
 
     print('Parsing annotation files')
 
@@ -61,47 +65,55 @@ def SelectSpecialItem(inputPath:str, outputPath:str, lstTypeName):
                 element_objs = element.findall('object')
                 element_filename = element.find('filename').text
 
-                if len(element_objs) > 0:
-                    annotation_data = { }
-                    if element_filename in trainval_fileName:
-                        annotation_data['imageset'] = 'trainval'
-                    elif element_filename in test_fileName:
-                        annotation_data['imageset'] = 'test'
-                    else:
-                        annotation_data['imageset'] = 'trainval'
-
+                bInList = False
                 for element_obj in element_objs:
                     class_name = element_obj.find('name').text
-                    if class_name in lstTypeName and strAnnotName.endswith(".xml"):
-                        itemName.append(strAnnotName[:-4])
+                    if class_name in lstTypeName and dictItemCount[class_name] < _maxCount:
+                        dictItemCount[class_name] += 1
+                        bInList = True
+                        break
 
-                        shutil.copy(annot, annot_path_output)
+                if bInList and strAnnotName.endswith(".xml"):
 
-                        strPicPath = os.path.join(imgs_path, element_filename)
-                        shutil.copy(strPicPath, imgs_path_output)
+                    itemName.append(strAnnotName[:-4])
+                    shutil.copy(annot, annot_path_output)
+                    strPicPath = os.path.join(imgs_path, element_filename)
+                    shutil.copy(strPicPath, imgs_path_output)
 
 
             except Exception as e:
                 print(annot, e)
                 continue
 
-        imageSets_path = os.path.join(data_path, 'ImageSets')
-        if not os.path.isdir(imageSets_path):
-            os.mkdir(imageSets_path)
+        try:
+            image_sets_output_path = os.path.join(data_output_path, 'ImageSets')
+            if not os.path.isdir(image_sets_output_path):
+                os.mkdir(image_sets_output_path)
 
-        print("Begin write test.txt and trainval.txt")
-        imageSetsMain_path = os.path.join(imageSets_path, 'Main')
-        testFilePath = os.path.join(imageSetsMain_path, "test.txt")
-        trainvalFilePath = os.path.join(imageSetsMain_path, "trainval.txt")
-        with open(testFilePath, "w") as fTest, open(trainvalFilePath, "w") as fTrainval:
-            for name in itemName:
-                if name in imgsets_path_trainval:
-                    fTrainval.writelines(name + "\n")
-                elif name in imgsets_path_test:
-                    fTest.writelines(name + "\n")
+            print("Begin write test.txt and trainval.txt")
+            imageSetsMain_output_path = os.path.join(image_sets_output_path, 'Main')
+            if not os.path.isdir(imageSetsMain_output_path):
+                os.mkdir(imageSetsMain_output_path)
+
+            test_file_output_path = os.path.join(imageSetsMain_output_path, "test.txt")
+            trainval_file_output_Path = os.path.join(imageSetsMain_output_path, "trainval.txt")
+
+            print(f"test size = {len(test_fileName)}")
+            print(f"trainval size = {len(trainval_fileName)}")
+
+            with open(test_file_output_path, "w") as fTest, open(trainval_file_output_Path, "w") as fTrainval:
+                for name in itemName:
+                    if name in trainval_fileName:
+                        fTrainval.writelines(name + "\n")
+                    elif name in test_fileName:
+                        fTest.writelines(name + "\n")
+            print(f"{test_file_output_path} and {trainval_file_output_Path} has been created!")
+        except Exception as e:
+            print(e)
+            continue
 
 
 inputPath = "G:/mldata/VOCdevkit/"
 outputPath = "./VOCdevkit/"
 
-SelectSpecialItem(inputPath, outputPath, ["dog", "cat"])
+SelectSpecialItem(inputPath, outputPath, ["dog", "cat", "person", "car"])

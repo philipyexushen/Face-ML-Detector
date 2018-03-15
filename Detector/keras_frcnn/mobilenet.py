@@ -11,6 +11,7 @@ from keras.utils import conv_utils
 from keras import initializers, regularizers, constraints
 from keras.engine import InputSpec
 from keras import backend as K
+from keras.applications import MobileNet
 
 from keras_frcnn.RoiPoolingConv import RoiPoolingConv
 

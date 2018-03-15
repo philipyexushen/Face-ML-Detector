@@ -19,7 +19,7 @@ from keras_frcnn import mobilenet as nn
 from keras_frcnn.pascal_voc_parser import get_data
 from lxml import etree
 
-def save_result_in_html(mean_overlapping_bboxes, class_acc, curr_loss, loss_rpn_cls, loss_rpn_regr ,loss_class_cls ,loss_class_regr, start_time):
+def save_result_in_html(mean_overlapping_bboxes, class_acc, loss_rpn_cls, loss_rpn_regr ,loss_class_cls ,loss_class_regr, start_time):
     files = etree.parse("./current.xml")
     data = files.getroot()
 
@@ -143,8 +143,8 @@ except:
     print('Could not load pretrained model weights. Weights can be found in the keras application folder \
         https://github.com/fchollet/keras/tree/master/keras/applications')
 
-optimizer = Adam(lr=1e-4)
-optimizer_classifier = Adam(lr=1e-4)
+optimizer = Adam(lr= 1e-4)
+optimizer_classifier = Adam(lr= 1e-4)
 model_rpn.compile(optimizer=optimizer, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
 model_classifier.compile(optimizer=optimizer_classifier, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
 model_all.compile(optimizer='sgd', loss='mae')
@@ -157,7 +157,7 @@ losses = np.zeros((epoch_length, 5))
 rpn_accuracy_for_epoch = []
 start_time = time.time()
 
-best_loss = 3.0425082782751134
+best_loss = 3
 
 class_mapping_inv = {v: k for k, v in class_mapping.items()}
 print('Starting training')
@@ -175,7 +175,7 @@ for epoch_num in range(num_epochs):
             loss_rpn = model_rpn.train_on_batch(X, Y)
 
             P_rpn = model_rpn.predict_on_batch(X)
-            R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
+            R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.80, max_boxes=300)
 
             # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
             X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data, C, class_mapping)
@@ -184,7 +184,7 @@ for epoch_num in range(num_epochs):
                 rpn_accuracy_for_epoch.append(0)
                 continue
 
-            # 最后一个位是bg位，注意不是全部的意思，py真是太狗了
+            # 最后一个位是bg位
             neg_samples = np.where(Y1[0, :, -1] == 1)
             pos_samples = np.where(Y1[0, :, -1] == 0)
 
@@ -265,13 +265,16 @@ for epoch_num in range(num_epochs):
                     if C.verbose:
                         print('Total loss decreased from {} to {}, saving weights'.format(best_loss,curr_loss))
                     best_loss = curr_loss
-                    model_all.save_weights(C.model_path)
+                    model_all.save_weights(f"model_frcnn_mobilenet_{epoch_num}.hdf5")
 
                 break
 
         except Exception as e:
             print('Exception: {}'.format(e))
-            continue
+            if iter_num < epoch_length:
+                continue
+            else:
+                break
 
 print('Training complete, exiting.')
 

@@ -1,11 +1,15 @@
 <component name="ProjectDictionaryState">
   <dictionary name="Philip">
     <words>
+      <w>annot</w>
       <w>crossentropy</w>
       <w>dataset</w>
       <w>depthwise</w>
+      <w>dets</w>
       <w>haar</w>
       <w>hargow</w>
+      <w>imgs</w>
+      <w>imgsets</w>
       <w>pointwise</w>
       <w>rects</w>
       <w>regr</w>
@@ -13,6 +17,7 @@
       <w>resnet</w>
       <w>tensorflow</w>
       <w>theano</w>
+      <w>trainval</w>
     </words>
   </dictionary>
 </component>

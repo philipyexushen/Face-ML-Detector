@@ -1,12 +1,36 @@
 <data>
-    <p>
-        Mean number of bounding boxes from RPN overlapping ground truth boxes: 16.523952095808383
-        Classifier accuracy for bounding boxes from RPN: 0.7371875
-        Loss RPN classifier: 1.6514391001176272
-        Loss RPN regression: 0.1713794287694618
-        Loss Detector classifier: 0.9397003030478954
-        Loss Detector regression: 0.2799894463401288
-        Elapsed time: 1856.4058728218079
-        loss = 3.0425082782751134
-    </p>
-</data>
+  <p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 46.606
+Classifier accuracy for bounding boxes from RPN: 0.8193125
+Loss RPN classifier: 0.5437763178057933
+Loss RPN regression: 0.10043202260090038
+Loss Detector classifier: 0.5402168957628309
+Loss Detector regression: 0.1728671083431691
+Elapsed time: 3399.1742560863495
+loss = 1.3572923445126936
+</p>
+  <p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 39.343313373253494
+Classifier accuracy for bounding boxes from RPN: 0.68809375
+Loss RPN classifier: 1.1595377666961573
+Loss RPN regression: 0.17738010090589523
+Loss Detector classifier: 1.0528404972851277
+Loss Detector regression: 0.3122354720719159
+Elapsed time: 2147.291760444641
+loss = 2.7019938369590966
+</p>
+<p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 42.18344965104686
+Classifier accuracy for bounding boxes from RPN: 0.7505625
+Loss RPN classifier: 1.1194958337281526
+Loss RPN regression: 0.169145047579892
+Loss Detector classifier: 0.830690738350153
+Loss Detector regression: 0.25123185334354636
+Elapsed time: 2208.134009361267
+loss = 2.3705634730017437
+</p><p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 40.646353646353646
+Classifier accuracy for bounding boxes from RPN: 0.7549375
+Loss RPN classifier: 1.1572524100831099
+Loss RPN regression: 0.174872285829857
+Loss Detector classifier: 0.7676113636121153
+Loss Detector regression: 0.23902004484087228
+Elapsed time: 2235.577917575836
+loss = 2.3387561043659546
+</p></data>

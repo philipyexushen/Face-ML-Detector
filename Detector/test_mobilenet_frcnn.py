@@ -140,10 +140,10 @@ all_imgs = []
 
 classes = {}
 
-bbox_threshold = 0.7
+bbox_threshold = 0.3
 
 visualise = True
-#cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
 
 for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff')):
@@ -153,7 +153,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
 
 #while cap.isOpened():
     img = cv2.imread(filepath)
-    #_, img = cap.read()
+    # _, img = cap.read()
     st = time.time()
 
     X, ratio = format_img(img, C)
@@ -165,7 +165,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     # 这里和train那里有点不一样，train那个rpn预测输出只有前两个，而test这里顺便把base_layer也给输出出来了，对于resnet50，这里是(None, None, 1024)
     [Y1, Y2, F] = model_rpn.predict(X)
 
-    R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.7, max_boxes=300)
+    R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=300)
     # print('Elapsed time 2 = {}'.format(time.time() - st))
 
     # convert from (x1,y1,x2,y2) to (x,y,w,h)
@@ -256,6 +256,6 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
         height = int(600)
         img = cv2.resize(img, (height, width))
 
-    cv2.imshow('img', img)
+    cv2.imshow('Hargow Classifier', img)
     cv2.waitKey(0)
     # cv2.imwrite('./results_imgs/{}.png'.format(idx),img)
