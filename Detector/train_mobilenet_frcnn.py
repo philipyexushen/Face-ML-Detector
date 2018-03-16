@@ -22,19 +22,41 @@ from lxml import etree
 def save_result_in_html(mean_overlapping_bboxes, class_acc, loss_rpn_cls, loss_rpn_regr ,loss_class_cls ,loss_class_regr, start_time):
     files = etree.parse("./current.xml")
     data = files.getroot()
-
     p = etree.SubElement(data, "p")
-    text = f"Mean number of bounding boxes from RPN overlapping ground truth boxes: {mean_overlapping_bboxes}\n"
-    text += f"Classifier accuracy for bounding boxes from RPN: {class_acc}\n"
-    text += f"Loss RPN classifier: {loss_rpn_cls}\n"
-    text += f"Loss RPN regression: {loss_rpn_regr}\n"
-    text += f"Loss Detector classifier: {loss_class_cls}\n"
-    text += f"Loss Detector regression: {loss_class_regr}\n"
-    text += f"Elapsed time: {time.time() - start_time}\n"
+    p.tail = "\n"
+
+    node = etree.SubElement(p, "mean_overlapping_bboxes")
+    node.text = str(mean_overlapping_bboxes)
+    node.tail = "\n"
+
+    node = etree.SubElement(p, "class_acc")
+    node.text = str(class_acc)
+    node.tail = "\n"
+
+    node = etree.SubElement(p, "loss_rpn_cls")
+    node.text = str(loss_rpn_cls)
+    node.tail = "\n"
+
+    node = etree.SubElement(p, "loss_rpn_regr")
+    node.text = str(loss_rpn_regr)
+    node.tail = "\n"
+
+    node = etree.SubElement(p, "loss_class_cls")
+    node.text = str(loss_class_cls)
+    node.tail = "\n"
+
+    node = etree.SubElement(p, "loss_class_regr")
+    node.text = str(loss_class_regr)
+    node.tail = "\n"
+
+    node = etree.SubElement(p, "Elapsed_time")
+    node.text = str(time.time() - start_time)
+    node.tail = "\n"
 
     total_loss = loss_rpn_cls + loss_rpn_regr + loss_class_cls + loss_class_regr
-    text += f"loss = {total_loss}\n"
-    p.text = text
+    node = etree.SubElement(p, "total_loss")
+    node.text = str(total_loss)
+    node.tail = "\n"
 
     doc = etree.ElementTree(data)
     with open("./current.xml", "wb") as f:
@@ -143,7 +165,7 @@ except:
     print('Could not load pretrained model weights. Weights can be found in the keras application folder \
         https://github.com/fchollet/keras/tree/master/keras/applications')
 
-optimizer = Adam(lr= 1e-4)
+optimizer = Adam(lr= 1e-5)
 optimizer_classifier = Adam(lr= 1e-4)
 model_rpn.compile(optimizer=optimizer, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
 model_classifier.compile(optimizer=optimizer_classifier, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
@@ -157,7 +179,7 @@ losses = np.zeros((epoch_length, 5))
 rpn_accuracy_for_epoch = []
 start_time = time.time()
 
-best_loss = 3
+best_loss = 1.8663825974439379
 
 class_mapping_inv = {v: k for k, v in class_mapping.items()}
 print('Starting training')
@@ -265,8 +287,8 @@ for epoch_num in range(num_epochs):
                     if C.verbose:
                         print('Total loss decreased from {} to {}, saving weights'.format(best_loss,curr_loss))
                     best_loss = curr_loss
-                    model_all.save_weights(f"model_frcnn_mobilenet_{epoch_num}.hdf5")
 
+                model_all.save_weights(f"model_frcnn_mobilenet_{epoch_num}.hdf5")
                 break
 
         except Exception as e:

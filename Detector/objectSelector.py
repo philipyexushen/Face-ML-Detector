@@ -116,4 +116,4 @@ def SelectSpecialItem(inputPath:str, outputPath:str, lstTypeName):
 inputPath = "G:/mldata/VOCdevkit/"
 outputPath = "./VOCdevkit/"
 
-SelectSpecialItem(inputPath, outputPath, ["dog", "cat", "person", "car"])
+SelectSpecialItem(inputPath, outputPath, ["dog", "cat", "person", "car", "horse"])

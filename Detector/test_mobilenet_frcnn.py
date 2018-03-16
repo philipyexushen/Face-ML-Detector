@@ -140,10 +140,10 @@ all_imgs = []
 
 classes = {}
 
-bbox_threshold = 0.3
+bbox_threshold = 0.5
 
 visualise = True
-# cap = cv2.VideoCapture(0)
+#cap = cv2.VideoCapture(0)
 
 for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff')):
