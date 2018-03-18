@@ -11,7 +11,7 @@ from keras.utils import np_utils
 from keras.optimizers import SGD
 from common import *
 
-_MODEL_PATH = './FaceModel.h5'
+_MODEL_PATH = './faceModel.h5'
 
 class DataSet:
     def __init__(self, pathName):

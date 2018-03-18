@@ -3,6 +3,7 @@ from reader import *
 from CNNnetwork import *
 from common import *
 import ffmpeg
+import cv2.ocl as ocl
 
 _winName = "Hargow Classifier"
 
@@ -55,9 +56,11 @@ def HaarDetector(model:Model, dataSet = None):
 
 
 if __name__ == "__main__":
+    ocl.setUseOpenCL(True)
     # print(keras.backend.image_dim_ordering())
+    '''
     CaptureTrainingSet(outputType=OutputVOCData)
-
+    '''
     '''
         cap = cv.VideoCapture(0)
     index = 0
@@ -71,10 +74,8 @@ if __name__ == "__main__":
         index += 1
     '''
 
-
     dataset = DataSet("./capture")
     dataset.Load()
-
     # model = Model()
     #model.Build(dataset)
     #model.Train()

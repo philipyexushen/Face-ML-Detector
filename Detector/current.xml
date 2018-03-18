@@ -1,36 +1,58 @@
 <data>
-  <p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 46.606
-Classifier accuracy for bounding boxes from RPN: 0.8193125
-Loss RPN classifier: 0.5437763178057933
-Loss RPN regression: 0.10043202260090038
-Loss Detector classifier: 0.5402168957628309
-Loss Detector regression: 0.1728671083431691
-Elapsed time: 3399.1742560863495
-loss = 1.3572923445126936
+ <p><mean_overlapping_bboxes>44.28243512974052</mean_overlapping_bboxes>
+<class_acc>0.80546875</class_acc>
+<loss_rpn_cls>0.7628730815092474</loss_rpn_cls>
+<loss_rpn_regr>0.1386444468619302</loss_rpn_regr>
+<loss_class_cls>0.5952086886167526</loss_class_cls>
+<loss_class_regr>0.19787829844839872</loss_class_regr>
+<Elapsed_time>3190.346966266632</Elapsed_time>
+<total_loss>1.6946045154363287</total_loss>
 </p>
-  <p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 39.343313373253494
-Classifier accuracy for bounding boxes from RPN: 0.68809375
-Loss RPN classifier: 1.1595377666961573
-Loss RPN regression: 0.17738010090589523
-Loss Detector classifier: 1.0528404972851277
-Loss Detector regression: 0.3122354720719159
-Elapsed time: 2147.291760444641
-loss = 2.7019938369590966
+  <p>
+    <mean_overlapping_bboxes>44.22654690618762</mean_overlapping_bboxes>
+    <class_acc>0.7988125</class_acc>
+    <loss_rpn_cls>0.9221047986439637</loss_rpn_cls>
+    <loss_rpn_regr>0.14389675491303205</loss_rpn_regr>
+    <loss_class_cls>0.6052856990341097</loss_class_cls>
+    <loss_class_regr>0.20104198073782026</loss_class_regr>
+    <Elapsed_time>3224.259038209915</Elapsed_time>
+    <total_loss>1.8723292333289256</total_loss>
+  </p>
+    <p>
+        <mean_overlapping_bboxes>45.13273453093812</mean_overlapping_bboxes>
+        <class_acc>0.789625</class_acc>
+        <loss_rpn_cls>0.9174673946950362</loss_rpn_cls>
+        <loss_rpn_regr>0.15055323162302375</loss_rpn_regr>
+        <loss_class_cls>0.6128199401386082</loss_class_cls>
+        <loss_class_regr>0.20206593527644873</loss_class_regr>
+        <Elapsed_time>3390.637589931488</Elapsed_time>
+        <total_loss>1.8829065017331168</total_loss>
+    </p>
+<p><mean_overlapping_bboxes>43.35329341317365</mean_overlapping_bboxes>
+<class_acc>0.79853125</class_acc>
+<loss_rpn_cls>0.9250136303282694</loss_rpn_cls>
+<loss_rpn_regr>0.14309699268918485</loss_rpn_regr>
+<loss_class_cls>0.6115238332599402</loss_class_cls>
+<loss_class_regr>0.19525995062477886</loss_class_regr>
+<Elapsed_time>1964.7615385055542</Elapsed_time>
+<total_loss>1.8748944069021736</total_loss>
 </p>
-<p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 42.18344965104686
-Classifier accuracy for bounding boxes from RPN: 0.7505625
-Loss RPN classifier: 1.1194958337281526
-Loss RPN regression: 0.169145047579892
-Loss Detector classifier: 0.830690738350153
-Loss Detector regression: 0.25123185334354636
-Elapsed time: 2208.134009361267
-loss = 2.3705634730017437
-</p><p>Mean number of bounding boxes from RPN overlapping ground truth boxes: 40.646353646353646
-Classifier accuracy for bounding boxes from RPN: 0.7549375
-Loss RPN classifier: 1.1572524100831099
-Loss RPN regression: 0.174872285829857
-Loss Detector classifier: 0.7676113636121153
-Loss Detector regression: 0.23902004484087228
-Elapsed time: 2235.577917575836
-loss = 2.3387561043659546
-</p></data>
+<p><mean_overlapping_bboxes>45.525948103792416</mean_overlapping_bboxes>
+<class_acc>0.8023125</class_acc>
+<loss_rpn_cls>0.915378047275763</loss_rpn_cls>
+<loss_rpn_regr>0.14437125466903672</loss_rpn_regr>
+<loss_class_cls>0.5914448905000463</loss_class_cls>
+<loss_class_regr>0.19955962681025266</loss_class_regr>
+<Elapsed_time>1899.809683561325</Elapsed_time>
+<total_loss>1.8507538192550987</total_loss>
+</p>
+<p><mean_overlapping_bboxes>44.496007984031934</mean_overlapping_bboxes>
+<class_acc>0.80109375</class_acc>
+<loss_rpn_cls>0.8559386495129157</loss_rpn_cls>
+<loss_rpn_regr>0.1432584972763434</loss_rpn_regr>
+<loss_class_cls>0.5873379093520343</loss_class_cls>
+<loss_class_regr>0.19875751964561642</loss_class_regr>
+<Elapsed_time>1928.3866066932678</Elapsed_time>
+<total_loss>1.7852925757869098</total_loss>
+</p>
+</data>
