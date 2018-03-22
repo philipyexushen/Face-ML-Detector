@@ -144,19 +144,17 @@ classes = {}
 bbox_threshold = 0.5
 
 visualise = True
-cap = cv2.VideoCapture(0)
+#cap = cv2.VideoCapture(0)
 
-'''
 for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff')):
         continue
     print(img_name)
     filepath = os.path.join(img_path,img_name)
-'''
 
-while cap.isOpened():
-    #img = cv2.imread(filepath)
-    _, img = cap.read()
+#while cap.isOpened():
+    img = cv2.imread(filepath)
+    # _, img = cap.read()
     st = common.Clock()
 
     X, ratio = format_img(img, C)
@@ -168,7 +166,7 @@ while cap.isOpened():
     # 这里和train那里有点不一样，train那个rpn预测输出只有前两个，而test这里顺便把base_layer也给输出出来了，对于resnet50，这里是(None, None, 1024)
     [Y1, Y2, F] = model_rpn.predict(X)
 
-    R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=80)
+    R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=300)
     # print('Elapsed time 2 = {}'.format(time.time() - st))
 
     # convert from (x1,y1,x2,y2) to (x,y,w,h)
@@ -245,7 +243,7 @@ while cap.isOpened():
             cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
     t2 = common.Clock() - st
-    common.DrawStr(img, (10, 20), 'Time passed: %.1f ms' % (t2 * 1000))
+    common.DrawStr(img, (10, 20), 'FPS %.1f' % (1000 /(t2 * 1000)))
     print(all_dets)
 
     width, height = img.shape[:2]

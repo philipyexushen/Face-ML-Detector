@@ -117,7 +117,6 @@ def _main(args):
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
 
-
         out_boxes, out_scores, out_classes = sess.run(
             [boxes, scores, classes],
             feed_dict={
@@ -149,7 +148,7 @@ def _main(args):
             cv.putText(image, textLabel, textOrg, cv.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
         t2 = common.Clock() - t1
-        common.DrawStr(image, (10, 20), 'Time passed: %.1f ms' % (t2 * 1000))
+        common.DrawStr(image, (10, 20), 'FPS: %.1f' % (1000 // (t2 * 1000)))
         cv.imshow("Hargow Classifier", image)
         if cv.waitKey(1) == 27:
             break

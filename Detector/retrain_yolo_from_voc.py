@@ -2,10 +2,7 @@
 This is a script that can be used to retrain the YOLOv2 model for your own dataset.
 """
 import argparse
-
 import os
-
-import matplotlib.pyplot as plt
 import numpy as np
 import PIL
 import tensorflow as tf
@@ -13,10 +10,13 @@ from keras import backend as K
 from keras.layers import Input, Lambda, Conv2D
 from keras.models import load_model, Model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
+import cv2.dnn as dnn
 
 from yad2k.models.keras_yolo import (preprocess_true_boxes, yolo_body,
                                      yolo_eval, yolo_head, yolo_loss)
 from yad2k.utils.draw_boxes import draw_boxes
+import cv2
+import lxml.etree as ET
 
 # Args
 argparser = argparse.ArgumentParser(
@@ -65,23 +65,7 @@ def _main(args):
 
     model_body, model = create_model(anchors, class_names)
 
-    train(
-        model,
-        class_names,
-        anchors,
-        image_data,
-        boxes,
-        detectors_mask,
-        matching_true_boxes
-    )
-
-    draw(model_body,
-        class_names,
-        anchors,
-        image_data,
-        image_set='val', # assumes training/validation split is 0.9
-        weights_name='trained_stage_3_best.h5',
-        save_all=False)
+    train(model, class_names, anchors, image_data, boxes, detectors_mask, matching_true_boxes)
 
 
 def get_classes(classes_path):
@@ -104,7 +88,6 @@ def get_anchors(anchors_path):
 
 def process_data(images, boxes=None):
     '''processes the data'''
-    images = [PIL.Image.fromarray(i) for i in images]
     orig_size = np.array([images[0].width, images[0].height])
     orig_size = np.expand_dims(orig_size, axis=0)
 
@@ -284,60 +267,58 @@ def train(model, class_names, anchors, image_data, boxes, detectors_mask, matchi
 
     model.save_weights('trained_stage_3.h5')
 
-def draw(model_body, class_names, anchors, image_data, image_set='val',
-            weights_name='trained_stage_3_best.h5', out_path="output_images", save_all=True):
-    '''
-    Draw bounding boxes on image data
-    '''
-    if image_set == 'train':
-        image_data = np.array([np.expand_dims(image, axis=0)
-            for image in image_data[:int(len(image_data)*.9)]])
-    elif image_set == 'val':
-        image_data = np.array([np.expand_dims(image, axis=0)
-            for image in image_data[int(len(image_data)*.9):]])
-    elif image_set == 'all':
-        image_data = np.array([np.expand_dims(image, axis=0)
-            for image in image_data])
-    else:
-        ValueError("draw argument image_set must be 'train', 'val', or 'all'")
-    # model.load_weights(weights_name)
-    print(image_data.shape)
-    model_body.load_weights(weights_name)
 
-    # Create output variables for prediction.
-    yolo_outputs = yolo_head(model_body.output, anchors, len(class_names))
-    input_image_shape = K.placeholder(shape=(2, ))
-    boxes, scores, classes = yolo_eval(
-        yolo_outputs, input_image_shape, score_threshold=0.07, iou_threshold=0)
+def read_from_voc_data(data_path):
+    data = dict()
+    data.update({"images":[]})
+    data.update({"boxes":[]})
+    print('Parsing annotation files')
 
-    # Run prediction on overfit image.
-    sess = K.get_session()  # TODO: Remove dependence on Tensorflow session.
+    annot_path = os.path.join(data_path, 'Annotations')
+    imgs_path = os.path.join(data_path, 'JPEGImages')
+    imgsets_path_trainval = os.path.join(data_path, 'ImageSets', 'Main', 'trainval.txt')
 
-    if  not os.path.exists(out_path):
-        os.makedirs(out_path)
-    for i in range(len(image_data)):
-        out_boxes, out_scores, out_classes = sess.run(
-            [boxes, scores, classes],
-            feed_dict={
-                model_body.input: image_data[i],
-                input_image_shape: [image_data.shape[2], image_data.shape[3]],
-                K.learning_phase(): 0
-            })
-        print('Found {} boxes for image.'.format(len(out_boxes)))
-        print(out_boxes)
+    trainval_files = []
+    try:
+        with open(imgsets_path_trainval) as f:
+            for line in f:
+                trainval_files.append(line.strip() + '.jpg')
+    except Exception as e:
+        print(e)
 
-        # Plot image with predicted boxes.
-        image_with_boxes = draw_boxes(image_data[i][0], out_boxes, out_classes,
-                                    class_names, out_scores)
-        # Save the image:
-        if save_all or (len(out_boxes) > 0):
-            image = PIL.Image.fromarray(image_with_boxes)
-            image.save(os.path.join(out_path,str(i)+'.png'))
+    annots = [os.path.join(annot_path, s) for s in os.listdir(annot_path)]
+    for annot in annots:
+        try:
+            et = ET.parse(annot)
+            element = et.getroot()
 
-        # To display (pauses the program):
-        # plt.imshow(image_with_boxes, interpolation='nearest')
-        # plt.show()
+            element_objs = element.findall('object')
+            element_filename = element.find('filename').text
 
+            img = cv2.imread(os.path.join(imgs_path, element_filename))
+            data["images"].append(img)
+            data["boxes"].append([])
+
+            boxes:list = []
+            for element_obj in element_objs:
+                class_name = element_obj.find('name').text
+                obj_bbox = element_obj.find('bndbox')
+                x1 = int(round(float(obj_bbox.find('xmin').text)))
+                y1 = int(round(float(obj_bbox.find('ymin').text)))
+                x2 = int(round(float(obj_bbox.find('xmax').text)))
+                y2 = int(round(float(obj_bbox.find('ymax').text)))
+
+                # Get extents as y_min, x_min, y_max, x_max, class for comparision with model output.
+                objs_list = np.array([class_name, y1, x1, y2, x2])
+                boxes.append(objs_list)
+
+            data["boxes"][-1] = np.array(boxes)
+
+        except Exception as e:
+            print(annot, e)
+            continue
+    data["boxes"] = np.array(data["boxes"])
+    return data
 
 
 if __name__ == '__main__':

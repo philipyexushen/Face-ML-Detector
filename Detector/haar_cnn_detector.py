@@ -23,17 +23,12 @@ def HaarDetector(model:Model, dataSet = None):
     dictIdx2NameMap = _CreateIdx2NameMap(dataSet.dictNameLabel)
 
     while cap.isOpened():
-        _, imgSrc = cap.read()
         t1 = Clock()
+        _, imgSrc = cap.read()
         imgGray = cv.cvtColor(imgSrc, cv.COLOR_BGR2GRAY)
         imgGray = cv.equalizeHist(imgGray)
 
         rects = FindHaarRect(imgGray, cascade)
-
-        dt = Clock() - t1
-        DrawStr(imgSrc, (20, 20), 'Haar detector time: %.1f ms' % (dt * 1000))
-
-        t1 = Clock()
         if len(rects) > 0:
             for x1, y1, x2, y2 in rects:
                 if x1 < 10 or x2 < 10 or y1 < 10 or y2 < 10:
@@ -46,9 +41,9 @@ def HaarDetector(model:Model, dataSet = None):
                            (255, 0, 255), lineType=cv.LINE_AA, thickness = 2)
 
         dt = Clock() - t1
-        DrawStr(imgSrc, (20, 40), 'Cnn detector time: %.1f ms' % (dt * 1000))
+        DrawStr(imgSrc, (10, 20), 'FPS: %.1f' % (1000 / (dt * 1000)))
         cv.imshow(_winName, imgSrc)
-        if cv.waitKey(5) == 27:
+        if cv.waitKey(1) == 27:
             break
 
     cap.release()
@@ -58,22 +53,6 @@ def HaarDetector(model:Model, dataSet = None):
 if __name__ == "__main__":
     ocl.setUseOpenCL(True)
     # print(keras.backend.image_dim_ordering())
-    '''
-    CaptureTrainingSet(outputType=OutputVOCData)
-    '''
-    '''
-        cap = cv.VideoCapture(0)
-    index = 0
-    cv.namedWindow("hello world")
-    while cap.isOpened():
-        _, img = cap.read()
-
-        cv.imshow("hello world", img)
-        cv.waitKey(5)
-        cv.imwrite(f"E:\\Users\\Administrator\\pictures\\Test\\cap\\{index}.jpg", img)
-        index += 1
-    '''
-
     dataset = DataSet("./capture")
     dataset.Load()
     # model = Model()
