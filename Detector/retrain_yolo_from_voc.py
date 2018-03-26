@@ -10,13 +10,14 @@ from keras import backend as K
 from keras.layers import Input, Lambda, Conv2D
 from keras.models import load_model, Model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
-import cv2.dnn as dnn
 
 from yad2k.models.keras_yolo import (preprocess_true_boxes, yolo_body,
                                      yolo_eval, yolo_head, yolo_loss)
 from yad2k.utils.draw_boxes import draw_boxes
 import cv2
 import lxml.etree as ET
+
+target_size = 160
 
 # Args
 argparser = argparse.ArgumentParser(
@@ -25,8 +26,7 @@ argparser = argparse.ArgumentParser(
 argparser.add_argument(
     '-d',
     '--data_path',
-    help="path to numpy data file (.npz) containing np.object array 'boxes' and np.uint8 array 'images'",
-    default=os.path.join('..', 'DATA', 'underwater_data.npz'))
+    help="path to voc data")
 
 argparser.add_argument(
     '-a',
@@ -38,7 +38,7 @@ argparser.add_argument(
     '-c',
     '--classes_path',
     help='path to classes file, defaults to pascal_classes.txt',
-    default=os.path.join('..', 'DATA', 'underwater_classes.txt'))
+    default=os.path.join('model_data', 'pascal_classes.txt'))
 
 # Default anchor boxes
 YOLO_ANCHORS = np.array(
@@ -50,10 +50,11 @@ def _main(args):
     classes_path = os.path.expanduser(args.classes_path)
     anchors_path = os.path.expanduser(args.anchors_path)
 
-    class_names = get_classes(classes_path)
+    class_names, map_class_names = get_classes(classes_path)
     anchors = get_anchors(anchors_path)
 
-    data = np.load(data_path) # custom data saved as a numpy file.
+    data = read_from_voc_data(data_path, map_class_names)
+
     #  has 2 arrays: an object array 'boxes' (variable length of boxes in each image)
     #  and an array of images 'images'
 
@@ -72,8 +73,16 @@ def get_classes(classes_path):
     '''loads the classes'''
     with open(classes_path) as f:
         class_names = f.readlines()
-    class_names = [c.strip() for c in class_names]
-    return class_names
+
+    map_class_names = dict()
+    ret_class_names = []
+
+    for i, c in enumerate(class_names) :
+        item = c.strip()
+        ret_class_names.append(item)
+        map_class_names.update({item : i})
+
+    return ret_class_names, map_class_names
 
 def get_anchors(anchors_path):
     '''loads the anchors from a file'''
@@ -88,11 +97,14 @@ def get_anchors(anchors_path):
 
 def process_data(images, boxes=None):
     '''processes the data'''
-    orig_size = np.array([images[0].width, images[0].height])
+    # orig_size = np.array([images[0].width, images[0].height])
+
+    orig_size = np.array(images[0].shape[:2])
     orig_size = np.expand_dims(orig_size, axis=0)
 
     # Image preprocessing.
-    processed_images = [i.resize((416, 416), PIL.Image.BICUBIC) for i in images]
+    # processed_images = [i.resize((416, 416), PIL.Image.BICUBIC) for i in images]
+    processed_images = [cv2.resize(i, (target_size, target_size)) for i in images]
     processed_images = [np.array(image, dtype=np.float) for image in processed_images]
     processed_images = [image/255. for image in processed_images]
 
@@ -100,13 +112,14 @@ def process_data(images, boxes=None):
         # Box preprocessing.
         # Original boxes stored as 1D list of class, x_min, y_min, x_max, y_max.
         boxes = [box.reshape((-1, 5)) for box in boxes]
-        # Get extents as y_min, x_min, y_max, x_max, class for comparision with
-        # model output.
-        boxes_extents = [box[:, [2, 1, 4, 3, 0]] for box in boxes]
+        # Get extents as y_min, x_min, y_max, x_max, class for comparision with model output.
 
         # Get box parameters as x_center, y_center, box_width, box_height, class.
+        # now caculate center
         boxes_xy = [0.5 * (box[:, 3:5] + box[:, 1:3]) for box in boxes]
         boxes_wh = [box[:, 3:5] - box[:, 1:3] for box in boxes]
+
+        # scale boxses, see yolo_eval
         boxes_xy = [boxxy / orig_size for boxxy in boxes_xy]
         boxes_wh = [boxwh / orig_size for boxwh in boxes_wh]
         boxes = [np.concatenate((boxes_xy[i], boxes_wh[i], box[:, 0:1]), axis=1) for i, box in enumerate(boxes)]
@@ -138,7 +151,7 @@ def get_detector_mask(boxes, anchors):
     detectors_mask = [0 for i in range(len(boxes))]
     matching_true_boxes = [0 for i in range(len(boxes))]
     for i, box in enumerate(boxes):
-        detectors_mask[i], matching_true_boxes[i] = preprocess_true_boxes(box, anchors, [416, 416])
+        detectors_mask[i], matching_true_boxes[i] = preprocess_true_boxes(box, anchors, [target_size, target_size])
 
     return np.array(detectors_mask), np.array(matching_true_boxes)
 
@@ -160,11 +173,13 @@ def create_model(anchors, class_names, load_pretrained=True, freeze_body=True):
 
     '''
 
-    detectors_mask_shape = (13, 13, 5, 1)
-    matching_boxes_shape = (13, 13, 5, 5)
+    # detectors_mask_shape = (13, 13, 5, 1)
+    # matching_boxes_shape = (13, 13, 5, 5)
+    detectors_mask_shape = (5, 5, 5, 1)
+    matching_boxes_shape = (5, 5, 5, 5)
 
     # Create model input layers.
-    image_input = Input(shape=(416, 416, 3))
+    image_input = Input(shape=(160, 160, 3))
     boxes_input = Input(shape=(None, 5))
     detectors_mask_input = Input(shape=detectors_mask_shape)
     matching_boxes_input = Input(shape=matching_boxes_shape)
@@ -268,7 +283,7 @@ def train(model, class_names, anchors, image_data, boxes, detectors_mask, matchi
     model.save_weights('trained_stage_3.h5')
 
 
-def read_from_voc_data(data_path):
+def read_from_voc_data(data_path, map_class_names:dict):
     data = dict()
     data.update({"images":[]})
     data.update({"boxes":[]})
@@ -309,7 +324,7 @@ def read_from_voc_data(data_path):
                 y2 = int(round(float(obj_bbox.find('ymax').text)))
 
                 # Get extents as y_min, x_min, y_max, x_max, class for comparision with model output.
-                objs_list = np.array([class_name, y1, x1, y2, x2])
+                objs_list = np.array([map_class_names[class_name], y1, x1, y2, x2])
                 boxes.append(objs_list)
 
             data["boxes"][-1] = np.array(boxes)

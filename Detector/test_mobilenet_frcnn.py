@@ -151,113 +151,116 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
         continue
     print(img_name)
     filepath = os.path.join(img_path,img_name)
-
 #while cap.isOpened():
-    img = cv2.imread(filepath)
-    # _, img = cap.read()
-    st = common.Clock()
 
-    X, ratio = format_img(img, C)
+    try:
+        img = cv2.imread(filepath)
+        # _, img = cap.read()
+        st = common.Clock()
 
-    if K.image_dim_ordering() == 'tf':
-        X = np.transpose(X, (0, 2, 3, 1))
+        X, ratio = format_img(img, C)
 
-    # get the feature maps and output from the RPN
-    # 这里和train那里有点不一样，train那个rpn预测输出只有前两个，而test这里顺便把base_layer也给输出出来了，对于resnet50，这里是(None, None, 1024)
-    [Y1, Y2, F] = model_rpn.predict(X)
+        if K.image_dim_ordering() == 'tf':
+            X = np.transpose(X, (0, 2, 3, 1))
 
-    R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=300)
-    # print('Elapsed time 2 = {}'.format(time.time() - st))
+        # get the feature maps and output from the RPN
+        # 这里和train那里有点不一样，train那个rpn预测输出只有前两个，而test这里顺便把base_layer也给输出出来了，对于resnet50，这里是(None, None, 1024)
+        [Y1, Y2, F] = model_rpn.predict(X)
 
-    # convert from (x1,y1,x2,y2) to (x,y,w,h)
-    R[:, 2] -= R[:, 0]
-    R[:, 3] -= R[:, 1]
+        R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=300)
+        # print('Elapsed time 2 = {}'.format(time.time() - st))
 
-    # apply the spatial pyramid pooling to the proposed regions
-    bboxes = {}
-    probs = {}
+        # convert from (x1,y1,x2,y2) to (x,y,w,h)
+        R[:, 2] -= R[:, 0]
+        R[:, 3] -= R[:, 1]
 
-    for jk in range(R.shape[0]//C.num_rois + 1):
-        ROIs = np.expand_dims(R[C.num_rois*jk:C.num_rois*(jk+1), :], axis=0)
-        if ROIs.shape[1] == 0:
-            break
+        # apply the spatial pyramid pooling to the proposed regions
+        bboxes = {}
+        probs = {}
 
-        if jk == R.shape[0]//C.num_rois:
-            #pad R
-            curr_shape = ROIs.shape
-            target_shape = (curr_shape[0],C.num_rois,curr_shape[2])
-            ROIs_padded = np.zeros(target_shape).astype(ROIs.dtype)
-            ROIs_padded[:, :curr_shape[1], :] = ROIs
-            ROIs_padded[0, curr_shape[1]:, :] = ROIs[0, 0, :]
-            ROIs = ROIs_padded
+        for jk in range(R.shape[0]//C.num_rois + 1):
+            ROIs = np.expand_dims(R[C.num_rois*jk:C.num_rois*(jk+1), :], axis=0)
+            if ROIs.shape[1] == 0:
+                break
 
-        [P_cls, P_regr] = model_classifier.predict([F, ROIs])
+            if jk == R.shape[0]//C.num_rois:
+                #pad R
+                curr_shape = ROIs.shape
+                target_shape = (curr_shape[0],C.num_rois,curr_shape[2])
+                ROIs_padded = np.zeros(target_shape).astype(ROIs.dtype)
+                ROIs_padded[:, :curr_shape[1], :] = ROIs
+                ROIs_padded[0, curr_shape[1]:, :] = ROIs[0, 0, :]
+                ROIs = ROIs_padded
 
-        for ii in range(P_cls.shape[1]):
+            [P_cls, P_regr] = model_classifier.predict([F, ROIs])
 
-            if np.max(P_cls[0, ii, :]) < bbox_threshold or np.argmax(P_cls[0, ii, :]) == (P_cls.shape[2] - 1):
-                continue
+            for ii in range(P_cls.shape[1]):
 
-            cls_name = class_mapping[np.argmax(P_cls[0, ii, :])]
+                if np.max(P_cls[0, ii, :]) < bbox_threshold or np.argmax(P_cls[0, ii, :]) == (P_cls.shape[2] - 1):
+                    continue
 
-            if cls_name not in bboxes:
-                bboxes[cls_name] = []
-                probs[cls_name] = []
+                cls_name = class_mapping[np.argmax(P_cls[0, ii, :])]
 
-            (x, y, w, h) = ROIs[0, ii, :]
+                if cls_name not in bboxes:
+                    bboxes[cls_name] = []
+                    probs[cls_name] = []
 
-            cls_num = np.argmax(P_cls[0, ii, :])
-            try:
-                (tx, ty, tw, th) = P_regr[0, ii, 4*cls_num:4*(cls_num+1)]
-                tx /= C.classifier_regr_std[0]
-                ty /= C.classifier_regr_std[1]
-                tw /= C.classifier_regr_std[2]
-                th /= C.classifier_regr_std[3]
-                x, y, w, h = roi_helpers.apply_regr(x, y, w, h, tx, ty, tw, th)
-            except:
-                pass
-            bboxes[cls_name].append([C.rpn_stride*x, C.rpn_stride*y, C.rpn_stride*(x+w), C.rpn_stride*(y+h)])
-            probs[cls_name].append(np.max(P_cls[0, ii, :]))
+                (x, y, w, h) = ROIs[0, ii, :]
 
-    all_dets = []
+                cls_num = np.argmax(P_cls[0, ii, :])
+                try:
+                    (tx, ty, tw, th) = P_regr[0, ii, 4*cls_num:4*(cls_num+1)]
+                    tx /= C.classifier_regr_std[0]
+                    ty /= C.classifier_regr_std[1]
+                    tw /= C.classifier_regr_std[2]
+                    th /= C.classifier_regr_std[3]
+                    x, y, w, h = roi_helpers.apply_regr(x, y, w, h, tx, ty, tw, th)
+                except:
+                    pass
+                bboxes[cls_name].append([C.rpn_stride*x, C.rpn_stride*y, C.rpn_stride*(x+w), C.rpn_stride*(y+h)])
+                probs[cls_name].append(np.max(P_cls[0, ii, :]))
 
-    for key in bboxes:
-        bbox = np.array(bboxes[key])
+        all_dets = []
 
-        new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.5, max_boxes=300)
-        for jk in range(new_boxes.shape[0]):
-            (x1, y1, x2, y2) = new_boxes[jk,:]
+        for key in bboxes:
+            bbox = np.array(bboxes[key])
 
-            (real_x1, real_y1, real_x2, real_y2) = get_real_coordinates(ratio, x1, y1, x2, y2)
+            new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.5, max_boxes=300)
+            for jk in range(new_boxes.shape[0]):
+                (x1, y1, x2, y2) = new_boxes[jk,:]
 
-            cv2.rectangle(img,(real_x1, real_y1), (real_x2, real_y2), (int(class_to_color[key][0]), int(class_to_color[key][1]), int(class_to_color[key][2])),2)
+                (real_x1, real_y1, real_x2, real_y2) = get_real_coordinates(ratio, x1, y1, x2, y2)
 
-            textLabel = '{}: {}'.format(key,int(100*new_probs[jk]))
-            all_dets.append((key,100*new_probs[jk]))
+                cv2.rectangle(img,(real_x1, real_y1), (real_x2, real_y2), (int(class_to_color[key][0]), int(class_to_color[key][1]), int(class_to_color[key][2])),2)
 
-            (retval,baseLine) = cv2.getTextSize(textLabel,cv2.FONT_HERSHEY_COMPLEX,1,1)
-            textOrg = (real_x1, real_y1-0)
+                textLabel = '{}: {}'.format(key,int(100*new_probs[jk]))
+                all_dets.append((key,100*new_probs[jk]))
 
-            cv2.rectangle(img, (textOrg[0] - 5, textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (0, 0, 0), 2)
-            cv2.rectangle(img, (textOrg[0] - 5,textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
-            cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
+                (retval,baseLine) = cv2.getTextSize(textLabel,cv2.FONT_HERSHEY_COMPLEX,1,1)
+                textOrg = (real_x1, real_y1-0)
 
-    t2 = common.Clock() - st
-    common.DrawStr(img, (10, 20), 'FPS %.1f' % (1000 /(t2 * 1000)))
-    print(all_dets)
+                cv2.rectangle(img, (textOrg[0] - 5, textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (0, 0, 0), 2)
+                cv2.rectangle(img, (textOrg[0] - 5,textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
+                cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
-    width, height = img.shape[:2]
-    if 600 < width <= height:
-        ratio = width / 600
-        height = int(height / ratio)
-        width = int(600)
-        img = cv2.resize(img, (height, width))
-    elif 600 < height <= width:
-        ratio = height / 600
-        width = int(width / ratio)
-        height = int(600)
-        img = cv2.resize(img, (height, width))
+        t2 = common.Clock() - st
+        common.DrawStr(img, (10, 20), 'FPS %.1f' % (1000 /(t2 * 1000)))
+        print(all_dets)
 
-    cv2.imshow('Hargow Classifier', img)
-    cv2.waitKey(5)
+        width, height = img.shape[:2]
+        if 600 < width <= height:
+            ratio = width / 600
+            height = int(height / ratio)
+            width = int(600)
+            img = cv2.resize(img, (height, width))
+        elif 600 < height <= width:
+            ratio = height / 600
+            width = int(width / ratio)
+            height = int(600)
+            img = cv2.resize(img, (height, width))
+
+        cv2.imshow('Hargow Classifier', img)
+        cv2.waitKey(0)
+    except Exception as e:
+        print('Exception: {}'.format(e))
     # cv2.imwrite('./results_imgs/{}.png'.format(idx),img)

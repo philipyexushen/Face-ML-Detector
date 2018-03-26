@@ -337,6 +337,8 @@ def yolo_eval(yolo_outputs,
     width = image_shape[1]
     image_dims = K.stack([height, width, height, width])
     image_dims = K.reshape(image_dims, [1, 4])
+
+    # 这个yolo9000的源码是会把boxses 对图像scale大小一下的，这也就是为什么retrain会有对boxses除以Image_shape的操作
     boxes = boxes * image_dims
 
     # TODO: Something must be done about this ugly hack!
