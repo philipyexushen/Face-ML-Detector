@@ -9,6 +9,7 @@ import random
 import numpy as np
 from keras import backend as K
 from keras.models import load_model
+from keras.layers import Input, Lambda, Conv2D
 import cv2 as cv
 import cv2.ocl as ocl
 import common

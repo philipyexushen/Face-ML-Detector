@@ -1,8 +1,9 @@
 # Face-ML-Detector  
 + A toy in my deep learning study   
 
-+ **March.26.2018**
-Added yolo9000 retrain model, try to match my dataset successfully.
++ **March.26.2018**  
+Added yolo9000 retrain model, try to match my dataset successfully.  
+Unfortunetly, I have found that some of my contributions has loss in github.
 
 + **March.18.2018**  
 Add yolo9000 algorithm. I have modified some source code from https://github.com/allanzelener/YAD2K. May be I will make a pull request when I finish the code that can read data from voc directly.
