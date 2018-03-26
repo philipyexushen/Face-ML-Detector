@@ -8,12 +8,20 @@ import random
 
 import numpy as np
 from keras import backend as K
-from keras.models import load_model
+from keras.models import load_model, Input, Model
+from yad2k.models.keras_yolo import yolo_body, yolo_loss
+from keras.layers import Input, Lambda, Conv2D
 import cv2 as cv
 import cv2.ocl as ocl
 import common
+import tensorflow as tf
 
 from yad2k.models.keras_yolo import yolo_eval, yolo_head
+
+# Default anchor boxes
+YOLO_ANCHORS = np.array(
+    ((0.57273, 0.677385), (1.87446, 2.06253), (3.33843, 5.47434),
+     (7.88282, 3.52778), (9.77052, 9.16828)))
 
 parser = argparse.ArgumentParser(
     description='Run a YOLO_v2 style detection model on test images..')
@@ -44,6 +52,79 @@ parser.add_argument(
     help='threshold for non max suppression IOU, default .5',
     default=.5)
 
+def create_model(anchors, class_names, freeze_body=True):
+    '''
+    returns the body of the model and the model
+
+    # Params:
+
+    load_pretrained: whether or not to load the pretrained model or initialize all weights
+
+    freeze_body: whether or not to freeze all weights except for the last layer's
+
+    # Returns:
+
+    model_body: YOLOv2 with new output layer
+
+    model: YOLOv2 with custom loss Lambda layer
+
+    '''
+
+    # detectors_mask_shape = (13, 13, 5, 1)
+    # matching_boxes_shape = (13, 13, 5, 5)
+    detectors_mask_shape = (5, 5, 5, 1)
+    matching_boxes_shape = (5, 5, 5, 5)
+
+    # Create model input layers.
+    image_input = Input(shape=(160, 160, 3))
+    boxes_input = Input(shape=(None, 5))
+    detectors_mask_input = Input(shape=detectors_mask_shape)
+    matching_boxes_input = Input(shape=matching_boxes_shape)
+
+    # Create model body.
+    yolo_model = yolo_body(image_input, len(anchors), len(class_names))
+    topless_yolo = Model(yolo_model.input, yolo_model.layers[-2].output)
+
+    if freeze_body:
+        for layer in topless_yolo.layers:
+            layer.trainable = False
+    final_layer = Conv2D(len(anchors)*(5+len(class_names)), (1, 1), activation='linear')(topless_yolo.output)
+
+    model_body = Model(image_input, final_layer)
+
+    # Place model loss on CPU to reduce GPU memory usage.
+    with tf.device('/cpu:0'):
+        # TODO: Replace Lambda with custom Keras layer for loss.
+        model_loss = Lambda(
+            yolo_loss,
+            output_shape=(1, ),
+            name='yolo_loss',
+            arguments={'anchors': anchors,
+                       'num_classes': len(class_names)})([
+                           model_body.output, boxes_input,
+                           detectors_mask_input, matching_boxes_input
+                       ])
+
+    model = Model(
+        [model_body.input, boxes_input, detectors_mask_input,
+         matching_boxes_input], model_loss)
+
+    return model_body, model
+
+def get_classes(classes_path):
+    '''loads the classes'''
+    with open(classes_path) as f:
+        class_names = f.readlines()
+
+    map_class_names = dict()
+    ret_class_names = []
+
+    for i, c in enumerate(class_names) :
+        item = c.strip()
+        ret_class_names.append(item)
+        map_class_names.update({item : i})
+
+    return ret_class_names, map_class_names
 
 def _main(args):
     model_path = os.path.expanduser(args.model_path)
@@ -53,23 +134,22 @@ def _main(args):
 
     sess = K.get_session()  # TODO: Remove dependence on Tensorflow session.
 
-    with open(classes_path) as f:
-        class_names = f.readlines()
-    class_names = [c.strip() for c in class_names]
-
     with open(anchors_path) as f:
         anchors = f.readline()
         anchors = [float(x) for x in anchors.split(',')]
         anchors = np.array(anchors).reshape(-1, 2)
 
-
-    yolo_model = load_model(model_path)
+    class_names, map_class_names = get_classes(classes_path)
+    yolo_model, _ = create_model(anchors, class_names)
+    yolo_model.load_weights(model_path)
+    # yolo_model = load_model(model_path)
 
     # Verify model, anchors, and classes are compatible
     num_classes = len(class_names)
     num_anchors = len(anchors)
     # TODO: Assumes dim ordering is channel last
     model_output_channels = yolo_model.layers[-1].output_shape[-1]
+
     assert model_output_channels == num_anchors * (num_classes + 5), \
         'Mismatch between model and given anchor and class sizes. ' \
         'Specify matching anchors and classes with --anchors_path and ' \
