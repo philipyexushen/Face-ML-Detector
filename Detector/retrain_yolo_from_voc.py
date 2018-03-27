@@ -190,14 +190,14 @@ def create_model(anchors, class_names, load_pretrained=True, freeze_body=True):
 
     if load_pretrained:
         # Save topless yolo:
-        topless_yolo_path = os.path.join('model_data', 'yolo_topless.h5')
+        topless_yolo_path = os.path.join('model_data', 'pretrained_best.h5')
         if not os.path.exists(topless_yolo_path):
             print("CREATING TOPLESS WEIGHTS FILE")
             yolo_path = os.path.join('model_data', 'yolo.h5')
             model_body = load_model(yolo_path)
             model_body = Model(model_body.inputs, model_body.layers[-2].output)
             model_body.save_weights(topless_yolo_path)
-        topless_yolo.load_weights(topless_yolo_path)
+        # topless_yolo.load_weights(topless_yolo_path)
 
     if freeze_body:
         for layer in topless_yolo.layers:
@@ -222,6 +222,7 @@ def create_model(anchors, class_names, load_pretrained=True, freeze_body=True):
     model = Model(
         [model_body.input, boxes_input, detectors_mask_input,
          matching_boxes_input], model_loss)
+    model.load_weights(os.path.join('model_data', 'pretrained_best.h5'))
 
     return model_body, model
 
