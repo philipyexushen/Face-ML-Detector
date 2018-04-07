@@ -4,7 +4,6 @@ This is a script that can be used to retrain the YOLOv2 model for your own datas
 import argparse
 import os
 import numpy as np
-import PIL
 import tensorflow as tf
 from keras import backend as K
 from keras.layers import Input, Lambda, Conv2D
@@ -12,12 +11,13 @@ from keras.models import load_model, Model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 
 from yad2k.models.keras_yolo import (preprocess_true_boxes, yolo_body,
-                                     yolo_eval, yolo_head, yolo_loss)
-from yad2k.utils.draw_boxes import draw_boxes
+                                     yolo_eval, yolo_head, yolo_loss, yolo_center_loss)
+from other_losses.center_loss import *
 import cv2
 import lxml.etree as ET
 
 target_size = 160
+center_loss_ratio = 0.1
 
 # Args
 argparser = argparse.ArgumentParser(
@@ -29,43 +29,43 @@ argparser.add_argument(
     help="path to voc data")
 
 argparser.add_argument(
-    '-a',
-    '--anchors_path',
-    help='path to anchors file, defaults to yolo_anchors.txt',
-    default=os.path.join('model_data', 'yolo_anchors.txt'))
-
-argparser.add_argument(
     '-c',
     '--classes_path',
     help='path to classes file, defaults to pascal_classes.txt',
     default=os.path.join('model_data', 'pascal_classes.txt'))
 
-# Default anchor boxes
-YOLO_ANCHORS = np.array(
-    ((0.57273, 0.677385), (1.87446, 2.06253), (3.33843, 5.47434),
-     (7.88282, 3.52778), (9.77052, 9.16828)))
+argparser.add_argument(
+    '-cl',
+    '--use_center_loss',
+    help='if use center loss',
+    default="1")
+
+argparser.add_argument(
+    '-a',
+    '--anchors_path',
+    help='path to anchors file, defaults to yolo_anchors.txt',
+    default='model_data/yolo_anchors.txt')
 
 def _main(args):
     data_path = os.path.expanduser(args.data_path)
     classes_path = os.path.expanduser(args.classes_path)
+    is_use_center_loss = bool(os.path.expanduser(args.use_center_loss))
     anchors_path = os.path.expanduser(args.anchors_path)
-
     class_names, map_class_names = get_classes(classes_path)
-    anchors = get_anchors(anchors_path)
 
     data = read_from_voc_data(data_path, map_class_names)
 
     #  has 2 arrays: an object array 'boxes' (variable length of boxes in each image)
     #  and an array of images 'images'
 
+    with open(anchors_path) as f:
+        anchors = f.readline()
+        anchors = [float(x) for x in anchors.split(',')]
+        anchors = np.array(anchors).reshape(-1, 2)
+
     image_data, boxes = process_data(data['images'], data['boxes'])
-
-    anchors = YOLO_ANCHORS
-
     detectors_mask, matching_true_boxes = get_detector_mask(boxes, anchors)
-
-    model_body, model = create_model(anchors, class_names)
-
+    model_body, model = create_model(anchors, class_names, is_use_center_loss)
     train(model, class_names, anchors, image_data, boxes, detectors_mask, matching_true_boxes)
 
 
@@ -84,16 +84,6 @@ def get_classes(classes_path):
 
     return ret_class_names, map_class_names
 
-def get_anchors(anchors_path):
-    '''loads the anchors from a file'''
-    if os.path.isfile(anchors_path):
-        with open(anchors_path) as f:
-            anchors = f.readline()
-            anchors = [float(x) for x in anchors.split(',')]
-            return np.array(anchors).reshape(-1, 2)
-    else:
-        Warning("Could not open anchors file, using default.")
-        return YOLO_ANCHORS
 
 def process_data(images, boxes=None):
     '''processes the data'''
@@ -155,22 +145,16 @@ def get_detector_mask(boxes, anchors):
 
     return np.array(detectors_mask), np.array(matching_true_boxes)
 
-def create_model(anchors, class_names, load_pretrained=True, freeze_body=True):
+def create_model(anchors, class_names, is_use_center_loss ,load_pretrained=True, freeze_body=True):
     '''
     returns the body of the model and the model
-
     # Params:
-
     load_pretrained: whether or not to load the pretrained model or initialize all weights
-
     freeze_body: whether or not to freeze all weights except for the last layer's
 
     # Returns:
-
     model_body: YOLOv2 with new output layer
-
     model: YOLOv2 with custom loss Lambda layer
-
     '''
 
     # detectors_mask_shape = (13, 13, 5, 1)
@@ -205,23 +189,28 @@ def create_model(anchors, class_names, load_pretrained=True, freeze_body=True):
     final_layer = Conv2D(len(anchors)*(5+len(class_names)), (1, 1), activation='linear')(topless_yolo.output)
 
     model_body = Model(image_input, final_layer)
+    model_loss = None
 
     # Place model loss on CPU to reduce GPU memory usage.
     with tf.device('/cpu:0'):
         # TODO: Replace Lambda with custom Keras layer for loss.
-        model_loss = Lambda(
-            yolo_loss,
-            output_shape=(1, ),
-            name='yolo_loss',
-            arguments={'anchors': anchors,
-                       'num_classes': len(class_names)})([
-                           model_body.output, boxes_input,
-                           detectors_mask_input, matching_boxes_input
-                       ])
+        if not is_use_center_loss:
+            model_loss = Lambda(
+                yolo_loss,
+                output_shape=(1,),
+                name='yolo_loss',
+                arguments={'anchors': anchors, 'num_classes': len(class_names)}) \
+                ([model_body.output, boxes_input, detectors_mask_input, matching_boxes_input])
 
-    model = Model(
-        [model_body.input, boxes_input, detectors_mask_input,
-         matching_boxes_input], model_loss)
+        else:
+            model_center_loss = Lambda(
+                yolo_center_loss,
+                output_shape=(1,),
+                name='yolo_loss',
+                arguments={'anchors': anchors, 'num_classes': len(class_names), 'ratio':0.1, 'alpha':0.5}) \
+                ([model_body.output, boxes_input, detectors_mask_input, matching_boxes_input])
+
+    model = Model([model_body.input, boxes_input, detectors_mask_input,matching_boxes_input], model_loss)
     model.load_weights(os.path.join('model_data', 'pretrained_best.h5'))
 
     return model_body, model
@@ -229,11 +218,8 @@ def create_model(anchors, class_names, load_pretrained=True, freeze_body=True):
 def train(model, class_names, anchors, image_data, boxes, detectors_mask, matching_true_boxes, validation_split=0.1):
     '''
     retrain/fine-tune the model
-
     logs training with tensorboard
-
     saves training weights in current directory
-
     best weights according to val_loss is saved as trained_stage_3_best.h5
     '''
     model.compile(

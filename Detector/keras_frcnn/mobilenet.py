@@ -6,7 +6,8 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from keras.layers import Input, Activation, Flatten, Convolution2D, \
-    AveragePooling2D, TimeDistributed, Conv2D, BatchNormalization, Dropout, GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense
+    AveragePooling2D, TimeDistributed, Conv2D, BatchNormalization, \
+    Dropout, GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, Layer
 from keras.utils import conv_utils
 from keras import initializers, regularizers, constraints
 from keras.engine import InputSpec
@@ -24,6 +25,7 @@ def get_img_output_length(width, height):
         return input_length
 
     return get_output_length(width), get_output_length(height)
+
 
 class DepthwiseConv2D(Conv2D):
     def __init__(self,
@@ -142,6 +144,34 @@ class DepthwiseConv2D(Conv2D):
         config['depthwise_regularizer'] = regularizers.serialize(self.depthwise_regularizer)
         config['depthwise_constraint'] = constraints.serialize(self.depthwise_constraint)
         return config
+
+
+class CenterLossLayer(Layer):
+    def __init__(self, alpha=0.5, **kwargs):
+        super().__init__(**kwargs)
+        self.centers = None
+        self.alpha = alpha
+
+    def build(self, input_shape):
+        # Center的更新不用梯度下降
+        self.centers = self.add_weight(name='centers', shape=(10, 2), initializer='uniform', trainable=False)
+        super().build(input_shape)
+
+    def call(self, x, mask=None):
+        # x[0] is Nx2, x[1] is Nx10 onehot, self.centers is 10x2
+        delta_centers = K.dot(K.transpose(x[1]), (K.dot(x[1], self.centers) - x[0]))  # 10x2
+        center_counts = K.sum(K.transpose(x[1]), axis=1, keepdims=True) + 1  # 10x1
+        delta_centers /= center_counts
+        new_centers = self.centers - self.alpha * delta_centers
+        self.add_update((self.centers, new_centers), x)
+
+        self.result = x[0] - K.dot(x[1], self.centers)
+        self.result = K.sum(self.result ** 2, axis=1, keepdims=True) #/ K.dot(x[1], center_counts)
+        return self.result # Nx1
+
+    def compute_output_shape(self, input_shape):
+        return K.int_shape(self.result)
+
 
 def relu6(x):
     return K.relu(x, max_value=6)
@@ -265,11 +295,14 @@ def classifier(base_layers, input_rois, num_rois, nb_classes, alpha=1.0, depth_m
 
     out_roi_pool = RoiPoolingConv(pooling_regions, num_rois)([base_layers, input_rois])
 
-    out = _depthwise_separable_conv_block_td(out_roi_pool, 1024, alpha, depth_multiplier, input_shape, strides=(2, 2), block_id=12, trainable=trainable)
+    out = _depthwise_separable_conv_block_td(out_roi_pool, 1024, alpha, depth_multiplier, input_shape,
+                                             strides=(2, 2), block_id=12, trainable=trainable)
     out = _depthwise_separable_conv_block_td(out, 1024, alpha, depth_multiplier, block_id=13, trainable=trainable)
     out = TimeDistributed(AveragePooling2D((7, 7)), name='avg_pool')(out)
     out = TimeDistributed(Flatten(), name='flatten')(out)
-    out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'), name='dense_class_{}'.format(nb_classes))(out)
+    out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'),
+                                name='dense_class_{}'.format(nb_classes))(out)
     # note: no regression target for bg class
-    out_regr = TimeDistributed(Dense(4 * (nb_classes-1), activation='linear', kernel_initializer='zero'), name='dense_regress_{}'.format(nb_classes))(out)
+    out_regr = TimeDistributed(Dense(4 * (nb_classes-1), activation='linear', kernel_initializer='zero'),
+                               name='dense_regress_{}'.format(nb_classes))(out)
     return [out_class, out_regr]

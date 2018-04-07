@@ -145,8 +145,10 @@ def _main(args):
             textOrg = (left, top)
 
             cv.rectangle(image, (left, top), (right, bottom), (255, 255, 0), 2)
-            cv.rectangle(image, (textOrg[0] - 5, textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (0, 0, 0), 2)
-            cv.rectangle(image, (textOrg[0] - 5,textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
+            cv.rectangle(image, (textOrg[0] - 5, textOrg[1]+baseLine - 5),
+                         (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (0, 0, 0), 2)
+            cv.rectangle(image, (textOrg[0] - 5,textOrg[1]+baseLine - 5),
+                         (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
             cv.putText(image, textLabel, textOrg, cv.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
         t2 = common.Clock() - t1

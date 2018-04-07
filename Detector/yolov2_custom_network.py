@@ -57,17 +57,12 @@ def create_model(anchors, class_names, freeze_body=True):
     returns the body of the model and the model
 
     # Params:
-
     load_pretrained: whether or not to load the pretrained model or initialize all weights
-
     freeze_body: whether or not to freeze all weights except for the last layer's
 
     # Returns:
-
     model_body: YOLOv2 with new output layer
-
     model: YOLOv2 with custom loss Lambda layer
-
     '''
 
     # detectors_mask_shape = (13, 13, 5, 1)
@@ -91,25 +86,7 @@ def create_model(anchors, class_names, freeze_body=True):
     final_layer = Conv2D(len(anchors)*(5+len(class_names)), (1, 1), activation='linear')(topless_yolo.output)
 
     model_body = Model(image_input, final_layer)
-
-    # Place model loss on CPU to reduce GPU memory usage.
-    with tf.device('/cpu:0'):
-        # TODO: Replace Lambda with custom Keras layer for loss.
-        model_loss = Lambda(
-            yolo_loss,
-            output_shape=(1, ),
-            name='yolo_loss',
-            arguments={'anchors': anchors,
-                       'num_classes': len(class_names)})([
-                           model_body.output, boxes_input,
-                           detectors_mask_input, matching_boxes_input
-                       ])
-
-    model = Model(
-        [model_body.input, boxes_input, detectors_mask_input,
-         matching_boxes_input], model_loss)
-
-    return model_body, model
+    return model_body
 
 def get_classes(classes_path):
     '''loads the classes'''
@@ -140,7 +117,7 @@ def _main(args):
         anchors = np.array(anchors).reshape(-1, 2)
 
     class_names, map_class_names = get_classes(classes_path)
-    yolo_model, _ = create_model(anchors, class_names)
+    yolo_model = create_model(anchors, class_names)
     yolo_model.load_weights(model_path)
     # yolo_model = load_model(model_path)
 
@@ -224,8 +201,10 @@ def _main(args):
             textOrg = (left, top)
 
             cv.rectangle(image, (left, top), (right, bottom), (255, 255, 0), 2)
-            cv.rectangle(image, (textOrg[0] - 5, textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (0, 0, 0), 2)
-            cv.rectangle(image, (textOrg[0] - 5,textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
+            cv.rectangle(image, (textOrg[0] - 5, textOrg[1]+baseLine - 5),
+                         (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (0, 0, 0), 2)
+            cv.rectangle(image, (textOrg[0] - 5,textOrg[1]+baseLine - 5),
+                         (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
             cv.putText(image, textLabel, textOrg, cv.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
         t2 = common.Clock() - t1

@@ -12,6 +12,8 @@ from ..utils import compose
 from .keras_darknet19 import (DarknetConv2D, DarknetConv2D_BN_Leaky,
                               darknet_body)
 
+from other_losses.center_loss import *
+
 sys.path.append('..')
 
 voc_anchors = np.array(
@@ -297,6 +299,15 @@ def yolo_loss(args,
             message='yolo_loss, conf_loss, class_loss, box_coord_loss:')
 
     return total_loss
+
+def yolo_center_loss(args, anchors, num_classes, ratio, alpha, rescore_confidence=False, print_loss=False):
+    total_loss = yolo_loss(args,anchors, num_classes, rescore_confidence, print_loss)
+
+    yolo_output, true_boxes = args[:2]
+    center_loss_val, centers, centers_update_op = center_loss(yolo_output, true_boxes, alpha, num_classes)
+    total_loss += ratio*center_loss_val
+
+    return total_loss, centers, centers_update_op
 
 
 def yolo(inputs, anchors, num_classes):
