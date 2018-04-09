@@ -213,7 +213,7 @@ def yolo_loss(args,
         (K.sigmoid(feats[..., 0:2]), feats[..., 2:4]), axis=-1)
 
     # TODO: Adjust predictions by image width/height for non-square images?
-    # IOUs may be off due to different aspect ratio.
+    # IOUs may be off due to different aspect ratio.x
 
     # Expand pred x,y,w,h to allow comparison with ground truth.
     # batch, conv_height, conv_width, num_anchors, num_true_boxes, box_params
@@ -299,6 +299,37 @@ def yolo_loss(args,
             message='yolo_loss, conf_loss, class_loss, box_coord_loss:')
 
     return total_loss
+
+from keras.models import Layer
+class YoloCenterLossLayer(Layer):
+    def __init__(self, alpha, num_classes, **kwargs):
+        super(YoloCenterLossLayer, self).__init__()
+        self.alpha = alpha
+        self.num_classes = num_classes
+        self.centers = None
+        self.centers_update_op = None
+
+    def build(self, input_shape):
+        # Center的更新不用梯度下降
+        self.centers = self.add_weight(name='centers', shape=(self.num_classes, 2), initializer='uniform', trainable=False)
+        super().build(input_shape)
+
+    def call(self, x, mask=None):
+        # x[0] is Nx2, x[1] is Nx10 onehot, self.centers is 10x2
+        delta_centers = K.dot(K.transpose(x[1]), (K.dot(x[1], self.centers) - x[0]))  # 10x2
+        center_counts = K.sum(K.transpose(x[1]), axis=1, keepdims=True) + 1  # 10x1
+        delta_centers /= center_counts
+        new_centers = self.centers - self.alpha * delta_centers
+        self.add_update((self.centers, new_centers), x)
+
+        self.result = x[0] - K.dot(x[1], self.centers)
+        self.result = K.sum(self.result ** 2, axis=1, keepdims=True) #/ K.dot(x[1], center_counts)
+        return self.result # Nx1
+
+    def compute_output_shape(self, input_shape):
+        return K.int_shape(self.result)
+
+
 
 def yolo_center_loss(args, anchors, num_classes, ratio, alpha, rescore_confidence=False, print_loss=False):
     total_loss = yolo_loss(args,anchors, num_classes, rescore_confidence, print_loss)

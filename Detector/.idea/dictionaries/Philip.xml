@@ -18,6 +18,7 @@
       <w>tensorflow</w>
       <w>theano</w>
       <w>trainval</w>
+      <w>yolo</w>
     </words>
   </dictionary>
 </component>
