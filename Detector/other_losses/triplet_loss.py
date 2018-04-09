@@ -10,10 +10,10 @@ ALPHA = 0.2  # Triplet Loss Parameter
 def triplet_loss(x):
     anchor, positive, negative = x
 
-    pos_dist = tf.reduce_sum(tf.square(tf.subtract(anchor, positive)), 1)
-    neg_dist = tf.reduce_sum(tf.square(tf.subtract(anchor, negative)), 1)
+    pos_dist = K.sum(K.square(anchor - positive), 1)
+    neg_dist = K.sum(K.square(anchor - negative), 1)
 
-    basic_loss = tf.add(tf.subtract(pos_dist, neg_dist), ALPHA)
-    loss = tf.reduce_mean(tf.maximum(basic_loss, 0.0), 0)
+    basic_loss = pos_dist - neg_dist + ALPHA
+    loss = K.mean(K.maximum(basic_loss, 0.0), 0)
 
     return loss
