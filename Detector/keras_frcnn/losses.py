@@ -64,10 +64,11 @@ def class_loss_regr(num_classes):
 def class_loss_cls(y_true, y_pred):
     return lambda_cls_class * K.mean(categorical_crossentropy(y_true[0, :, :], y_pred[0, :, :]))
 
-ALPHA = 0.1
+ALPHA = 0.01
 
 def class_triplet_loss_regr(num_classes):
     def class_loss_regr_fixed_num(y_true, y_pred):
+
         pos_loss = y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*num_classes:4*2*num_classes] - y_pred)
         neg_loss = y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*3*num_classes:] - y_pred)
 
