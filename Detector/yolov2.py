@@ -63,7 +63,6 @@ def _main(args):
         anchors = [float(x) for x in anchors.split(',')]
         anchors = np.array(anchors).reshape(-1, 2)
 
-
     yolo_model = load_model(model_path)
 
     # Verify model, anchors, and classes are compatible
