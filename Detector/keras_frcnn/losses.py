@@ -82,5 +82,5 @@ def class_triplet_loss_cls(num_classes):
         pos_loss = K.square(y_true[:, :, :num_classes] - y_pred)
         neg_loss = K.square(y_true[:, :, num_classes:] - y_pred)
 
-        return lambda_cls_class * K.sum(K.relu(pos_loss - neg_loss + ALPHA))
+        return lambda_cls_class * K.mean(K.relu(pos_loss - neg_loss + ALPHA))
     return class_loss_regr_fixed_num
