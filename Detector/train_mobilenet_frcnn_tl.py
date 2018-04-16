@@ -67,11 +67,6 @@ def save_result_in_html(mean_overlapping_bboxes, class_acc, loss_rpn_cls, loss_r
         doc.write(f, pretty_print=True)
 
 def get_training_pack(pos_samples, neg_samples, X2, Y1, Y2):
-    if len(pos_samples) <= len(neg_samples):
-        choice_sum = len(pos_samples) if len(pos_samples) <= C.num_rois // 2 else C.num_rois // 2
-    else:
-        choice_sum = len(neg_samples) if len(neg_samples) <= C.num_rois // 2  else C.num_rois // 2
-
     selected_pos_samples_index = np.random.choice(len(pos_samples), C.num_rois // 2, replace=True)
     selected_pos_samples = pos_samples[selected_pos_samples_index].tolist()
 
