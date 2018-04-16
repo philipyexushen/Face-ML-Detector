@@ -68,21 +68,20 @@ ALPHA_regr = 0.01
 
 def class_triplet_loss_regr(num_classes):
     def class_loss_regr_fixed_num(y_true, y_pred):
-
-        pos_loss = y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*num_classes:4*2*num_classes] - y_pred)
-        neg_loss = y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*3*num_classes:] - y_pred)
+        pos_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*num_classes:4*2*num_classes] - y_pred), 1)
+        neg_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*3*num_classes:] - y_pred), 1)
 
         # y_true[:, :, :4*num_classes]前半部分对于pos和neg应该都是等同的
-        return lambda_cls_regr * K.sum(K.relu(pos_loss - neg_loss + ALPHA_regr)) \
+        return lambda_cls_regr * K.sum(K.maximum(pos_loss - neg_loss + ALPHA_regr, 0)) \
                / K.sum(epsilon + y_true[:, :, :4*num_classes])
     return class_loss_regr_fixed_num
 
 
-ALPHA_cls = 0.1
+ALPHA_cls = 0.04
 def class_triplet_loss_cls(num_classes):
     def class_loss_regr_fixed_num(y_true, y_pred):
-        pos_loss = K.square(y_true[:, :, :num_classes] - y_pred)
-        neg_loss = K.square(y_true[:, :, num_classes:] - y_pred)
+        pos_loss = K.sum(K.square(y_true[:, :, :num_classes] - y_pred), 1)
+        neg_loss = K.sum(K.square(y_true[:, :, num_classes:] - y_pred), 1)
 
-        return lambda_cls_class * K.mean(K.relu(pos_loss - neg_loss + ALPHA_cls))
+        return lambda_cls_class * K.mean(K.maximum(pos_loss - neg_loss + ALPHA_cls, 0), 0)
     return class_loss_regr_fixed_num
