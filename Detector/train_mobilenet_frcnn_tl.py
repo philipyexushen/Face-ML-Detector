@@ -73,11 +73,11 @@ def get_training_pack(pos_samples, neg_samples, X2, Y1, Y2):
     selected_neg_samples_index = np.random.choice(len(neg_samples), C.num_rois // 2, replace=True)
     selected_neg_samples = neg_samples[selected_neg_samples_index].tolist()
 
-    selected_pos_anti_samples = []
+    triplet_pos_anti_samples = []
     for i, sel in enumerate(selected_pos_samples_index):
         pos_samples_ex_index = np.delete(selected_pos_samples_index, i, axis=0)
         val = pos_samples[np.random.choice(pos_samples_ex_index, 1, replace=False)][0].item()
-        selected_pos_anti_samples.append(val)
+        triplet_pos_anti_samples.append(val)
 
     triplet_neg_anti_example = []
     for i, sel in enumerate(selected_neg_samples_index):
@@ -86,7 +86,7 @@ def get_training_pack(pos_samples, neg_samples, X2, Y1, Y2):
         triplet_neg_anti_example.append(val)
 
     triplet_pos_sel = selected_pos_samples + selected_neg_samples
-    triplet_neg_sel = selected_pos_anti_samples + triplet_neg_anti_example
+    triplet_neg_sel = triplet_pos_anti_samples + triplet_neg_anti_example
 
     X2_pack = X2[:, triplet_pos_sel, :]
     tripletY1_pack = np.dstack((Y1[:, triplet_pos_sel, :], Y1[:, triplet_neg_sel, :]))

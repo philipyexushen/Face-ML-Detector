@@ -141,7 +141,7 @@ all_imgs = []
 
 classes = {}
 
-bbox_threshold = 0.5
+bbox_threshold = 0.1
 
 visualise = True
 #cap = cv2.VideoCapture(0)

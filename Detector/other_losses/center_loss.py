@@ -42,7 +42,6 @@ def center_loss(features, labels, alpha, num_classes):
 
     diff = diff / tf.cast((1 + appear_times), tf.float32)
     diff = alpha * diff
-
     centers_update_op = tf.scatter_sub(centers, labels, diff)
 
     return loss, centers, centers_update_op

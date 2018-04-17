@@ -64,12 +64,12 @@ def class_loss_regr(num_classes):
 def class_loss_cls(y_true, y_pred):
     return lambda_cls_class * K.mean(categorical_crossentropy(y_true[0, :, :], y_pred[0, :, :]))
 
-ALPHA_regr = 0.01
+ALPHA_regr = 0.1
 
 def class_triplet_loss_regr(num_classes):
     def class_loss_regr_fixed_num(y_true, y_pred):
-        pos_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*num_classes:4*2*num_classes] - y_pred), 1)
-        neg_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*3*num_classes:] - y_pred), 1)
+        pos_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*num_classes:4*2*num_classes] - y_pred), 2)
+        neg_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*3*num_classes:] - y_pred), 2)
 
         # y_true[:, :, :4*num_classes]前半部分对于pos和neg应该都是等同的
         return lambda_cls_regr * K.sum(K.maximum(pos_loss - neg_loss + ALPHA_regr, 0)) \
@@ -77,11 +77,11 @@ def class_triplet_loss_regr(num_classes):
     return class_loss_regr_fixed_num
 
 
-ALPHA_cls = 0.04
+ALPHA_cls = 0.1
 def class_triplet_loss_cls(num_classes):
     def class_loss_regr_fixed_num(y_true, y_pred):
-        pos_loss = K.sum(K.square(y_true[:, :, :num_classes] - y_pred), 1)
-        neg_loss = K.sum(K.square(y_true[:, :, num_classes:] - y_pred), 1)
+        pos_loss = K.sum(K.square(y_true[:, :, :num_classes] - y_pred), 2)
+        neg_loss = K.sum(K.square(y_true[:, :, num_classes:] - y_pred), 2)
 
-        return lambda_cls_class * K.mean(K.maximum(pos_loss - neg_loss + ALPHA_cls, 0), 0)
+        return lambda_cls_class * K.mean(K.maximum(pos_loss - neg_loss + ALPHA_cls, 0))
     return class_loss_regr_fixed_num
