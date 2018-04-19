@@ -88,7 +88,7 @@ def class_triplet_loss_regr(num_classes, num_rois):
     return class_loss_regr_fixed_num
 
 
-ALPHA_cls = 0.1
+ALPHA_cls = 0.5
 def class_triplet_loss_cls(num_classes, num_rois):
     def class_loss_cls_fixed_num(y_true, y_pred):
         original_anchor = y_pred[:, :num_rois, :]

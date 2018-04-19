@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b39c28e2-604d-4e33-92d2-e6a743ef66ed" name="Default" comment="">
-      <change beforePath="" afterPath="$PROJECT_DIR$/test_mobilenet_frcnn_tl.py" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/keras_frcnn/losses.py" afterPath="$PROJECT_DIR$/keras_frcnn/losses.py" />
-      <change beforePath="$PROJECT_DIR$/keras_frcnn/mobilenet.py" afterPath="$PROJECT_DIR$/keras_frcnn/mobilenet.py" />
       <change beforePath="$PROJECT_DIR$/train_mobilenet_frcnn_tl.py" afterPath="$PROJECT_DIR$/train_mobilenet_frcnn_tl.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -32,11 +29,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="losses.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="losses.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/keras_frcnn/losses.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="392">
-              <caret line="97" column="0" lean-forward="false" selection-start-line="97" selection-start-column="0" selection-end-line="97" selection-end-column="0" />
+            <state relative-caret-position="251">
+              <caret line="95" column="51" lean-forward="true" selection-start-line="95" selection-start-column="51" selection-end-line="95" selection-end-column="51" />
               <folding />
             </state>
           </provider>
@@ -82,16 +79,6 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="triplet_loss.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/other_losses/triplet_loss.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="147">
-              <caret line="12" column="36" lean-forward="false" selection-start-line="12" selection-start-column="30" selection-end-line="12" selection-end-column="36" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="train_mobilenet_frcnn.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/train_mobilenet_frcnn.py">
           <provider selected="true" editor-type-id="text-editor">
@@ -102,14 +89,14 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="train_mobilenet_frcnn_tl.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="train_mobilenet_frcnn_tl.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/train_mobilenet_frcnn_tl.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="203">
-              <caret line="319" column="0" lean-forward="false" selection-start-line="319" selection-start-column="0" selection-end-line="319" selection-end-column="0" />
+            <state relative-caret-position="465">
+              <caret line="97" column="35" lean-forward="true" selection-start-line="97" selection-start-column="35" selection-end-line="97" selection-end-column="35" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
-                <element signature="e#761#1937#0" expanded="false" />
+                <element signature="e#778#1954#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -202,9 +189,9 @@
         <option value="$PROJECT_DIR$/current.xml" />
         <option value="$PROJECT_DIR$/test_mobilenet_frcnn.py" />
         <option value="$PROJECT_DIR$/test_mobilenet_frcnn_tl.py" />
-        <option value="$PROJECT_DIR$/keras_frcnn/losses.py" />
         <option value="$PROJECT_DIR$/keras_frcnn/mobilenet.py" />
         <option value="$PROJECT_DIR$/train_mobilenet_frcnn_tl.py" />
+        <option value="$PROJECT_DIR$/keras_frcnn/losses.py" />
       </list>
     </option>
   </component>
@@ -504,11 +491,11 @@
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32824427" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293348" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293348" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.36750272" sideWeight="0.49788582" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.36750272" sideWeight="0.49788582" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.22357294" sideWeight="0.5321701" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293348" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2563425" sideWeight="0.5" order="5" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.39694658" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.5136314" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -523,28 +510,6 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/train_mobilenet_frcnn_tl.py</url>
-          <line>270</line>
-          <option name="timeStamp" value="193" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/train_mobilenet_frcnn_tl.py</url>
-          <line>269</line>
-          <option name="timeStamp" value="194" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/train_mobilenet_frcnn_tl.py</url>
-          <line>272</line>
-          <option name="timeStamp" value="195" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/train_mobilenet_frcnn_tl.py</url>
-          <line>319</line>
-          <option name="timeStamp" value="196" />
-        </line-breakpoint>
-      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">
@@ -552,9 +517,13 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="197" />
+      <option name="time" value="230" />
     </breakpoint-manager>
-    <watches-manager />
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="Y1[0, pos_samples, pos]" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$USER_HOME$/.PyCharmCE2017.3/system/python_stubs/-1120166012/lxml/etree/__init__.py">
@@ -625,13 +594,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="843">
           <caret line="722" column="37" lean-forward="false" selection-start-line="722" selection-start-column="32" selection-end-line="722" selection-end-column="37" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="356">
-          <caret line="1667" column="0" lean-forward="false" selection-start-line="1667" selection-start-column="0" selection-end-line="1667" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -893,14 +855,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test_mobilenet_frcnn_tl.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="441">
-          <caret line="141" column="12" lean-forward="true" selection-start-line="141" selection-start-column="12" selection-end-line="141" selection-end-column="12" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://C:/Program Files/Python36/Lib/site-packages/keras/engine/training.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="173">
@@ -919,22 +873,38 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/keras_frcnn/losses.py">
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="392">
-          <caret line="97" column="0" lean-forward="false" selection-start-line="97" selection-start-column="0" selection-end-line="97" selection-end-column="0" />
+        <state relative-caret-position="235">
+          <caret line="1629" column="46" lean-forward="false" selection-start-line="1629" selection-start-column="45" selection-end-line="1629" selection-end-column="46" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test_mobilenet_frcnn_tl.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="441">
+          <caret line="141" column="12" lean-forward="true" selection-start-line="141" selection-start-column="12" selection-end-line="141" selection-end-column="12" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/train_mobilenet_frcnn_tl.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="203">
-          <caret line="319" column="0" lean-forward="false" selection-start-line="319" selection-start-column="0" selection-end-line="319" selection-end-column="0" />
+        <state relative-caret-position="465">
+          <caret line="97" column="35" lean-forward="true" selection-start-line="97" selection-start-column="35" selection-end-line="97" selection-end-column="35" />
           <folding>
             <element signature="e#0#31#0" expanded="true" />
-            <element signature="e#761#1937#0" expanded="false" />
+            <element signature="e#778#1954#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/keras_frcnn/losses.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="251">
+          <caret line="95" column="51" lean-forward="true" selection-start-line="95" selection-start-column="51" selection-end-line="95" selection-end-column="51" />
+          <folding />
         </state>
       </provider>
     </entry>

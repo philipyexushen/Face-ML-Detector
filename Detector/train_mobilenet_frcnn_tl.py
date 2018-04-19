@@ -6,6 +6,7 @@ import time
 import numpy as np
 from optparse import OptionParser
 import pickle
+import traceback
 
 from keras import backend as K
 from keras.optimizers import Adam, SGD, RMSprop
@@ -68,35 +69,42 @@ def save_result_in_html(mean_overlapping_bboxes, class_acc, loss_rpn_cls, loss_r
 
 def get_training_pack(pos_samples, neg_samples, X2, Y1, Y2):
     # step0:  select C.num_rois / 2 item from pos_samples和neg_smaples as original anchor
-    selected_pos_samples_index = np.random.choice(len(pos_samples), C.num_rois // 2, replace=True).tolist()
-    selected_pos_samples = pos_samples[selected_pos_samples_index].tolist()
-
-    selected_neg_samples_index = np.random.choice(len(neg_samples), C.num_rois // 2, replace=True).tolist()
-    selected_neg_samples = neg_samples[selected_neg_samples_index].tolist()
+    selected_pos_samples = np.random.choice(pos_samples, C.num_rois // 2, replace=True).tolist()
+    selected_neg_samples = np.random.choice(neg_samples, C.num_rois // 2, replace=True).tolist()
 
     triplet_original_samples = selected_pos_samples + selected_neg_samples
 
     # step1: select positive anchor
     triplet_pos_anchor_samples = []
-    for i, sel in enumerate(selected_pos_samples_index):
+    for i, sel in enumerate(selected_pos_samples):
         pos = np.where(Y1[0, sel, :] == 1)[0].item()
-        pos_samples_ex_index = np.where(Y1[0, pos_samples, pos] == 0)[0]
-        val = pos_samples[np.random.choice(pos_samples_ex_index, 1, replace=False)][0].item()
+        pos_samples_ex = pos_samples[np.where(Y1[0, pos_samples, pos] == 1)[0]]
+        if len(pos_samples_ex) > 1:
+            pos_samples_ex = pos_samples_ex[np.where(pos_samples_ex != sel)]
+
+        assert len(pos_samples_ex) > 0
+        val = np.random.choice(pos_samples_ex, 1, replace=False)[0].item()
         triplet_pos_anchor_samples.append(val)
 
-    for i, sel in enumerate(selected_neg_samples_index):
-        neg_samples_ex_index = np.delete(selected_neg_samples_index, i, axis=0)
-        val = neg_samples[np.random.choice(neg_samples_ex_index, 1, replace=False)][0].item()
+    for i, sel in enumerate(selected_neg_samples):
+        neg_samples_ex = selected_neg_samples
+        if len(neg_samples_ex) > 1:
+            neg_samples_ex = neg_samples[np.where(neg_samples != sel)]
+
+        assert len(neg_samples_ex) > 0
+        val = np.random.choice(neg_samples_ex, 1, replace=False)[0].item()
         triplet_pos_anchor_samples.append(val)
  
     # step2: select negative anchor
     triplet_neg_anchor_samples = []
-    selected_samples_index = selected_pos_samples_index + selected_neg_samples_index
+    selected_total_samples = selected_pos_samples + selected_neg_samples
     total_samples = np.hstack((pos_samples, neg_samples))
-    for i, sel in enumerate(selected_samples_index):
+    for i, sel in enumerate(selected_total_samples):
         pos = np.where(Y1[0, sel, :] == 1)[0].item()
-        index = np.delete(selected_samples_index, np.where(Y1[0, total_samples, pos] == 1)[0], axis=0)
-        val = np.random.choice(index, 1, replace=False)[0].item()
+        samples = np.delete(total_samples, np.where(Y1[0, :, pos] == 1)[0], axis=0)
+
+        assert len(samples) > 0
+        val = np.random.choice(samples, 1, replace=False)[0].item()
         triplet_neg_anchor_samples.append(val)
 
     triplet_sel = triplet_original_samples + triplet_pos_anchor_samples + triplet_neg_anchor_samples
@@ -105,6 +113,7 @@ def get_training_pack(pos_samples, neg_samples, X2, Y1, Y2):
     tripletY2_pack = Y2[:, triplet_sel, :]
 
     return X2_pack, tripletY1_pack, tripletY2_pack
+
 
 if __name__ == "__main__":
     sys.setrecursionlimit(40000)
@@ -314,13 +323,20 @@ if __name__ == "__main__":
 
                     model_all.save_weights(f"model_frcnn_mobilenet_{epoch_num}.hdf5")
                     break
+            except AssertionError as e:
+                _, _, tb = sys.exc_info()
+                traceback.print_tb(tb)  # Fixed format
+                tb_info = traceback.extract_tb(tb)
+                filename, line, func, text = tb_info[-1]
 
+                print('An error occurred on line {} in statement {}'.format(line, text))
             except Exception as e:
                 print('Exception: {}'.format(e))
-                if iter_num < epoch_length:
-                    continue
-                else:
-                    break
+            if iter_num < epoch_length:
+                continue
+            else:
+                break
+
 
     print('Training complete, exiting.')
 
