@@ -67,36 +67,46 @@ def save_result_in_html(mean_overlapping_bboxes, class_acc, loss_rpn_cls, loss_r
         doc.write(f, pretty_print=True)
 
 def get_training_pack(pos_samples, neg_samples, X2, Y1, Y2):
-    selected_pos_samples_index = np.random.choice(len(pos_samples), C.num_rois // 2, replace=True)
+    # step0:  select C.num_rois / 2 item from pos_samples和neg_smaples as original anchor
+    selected_pos_samples_index = np.random.choice(len(pos_samples), C.num_rois // 2, replace=True).tolist()
     selected_pos_samples = pos_samples[selected_pos_samples_index].tolist()
 
-    selected_neg_samples_index = np.random.choice(len(neg_samples), C.num_rois // 2, replace=True)
+    selected_neg_samples_index = np.random.choice(len(neg_samples), C.num_rois // 2, replace=True).tolist()
     selected_neg_samples = neg_samples[selected_neg_samples_index].tolist()
 
-    triplet_pos_anti_samples = []
-    for i, sel in enumerate(selected_pos_samples_index):
-        pos_samples_ex_index = np.delete(selected_pos_samples_index, i, axis=0)
-        val = pos_samples[np.random.choice(pos_samples_ex_index, 1, replace=False)][0].item()
-        triplet_pos_anti_samples.append(val)
+    triplet_original_samples = selected_pos_samples + selected_neg_samples
 
-    triplet_neg_anti_example = []
+    # step1: select positive anchor
+    triplet_pos_anchor_samples = []
+    for i, sel in enumerate(selected_pos_samples_index):
+        pos = np.where(Y1[0, sel, :] == 1)[0].item()
+        pos_samples_ex_index = np.where(Y1[0, pos_samples, pos] == 0)[0]
+        val = pos_samples[np.random.choice(pos_samples_ex_index, 1, replace=False)][0].item()
+        triplet_pos_anchor_samples.append(val)
+
     for i, sel in enumerate(selected_neg_samples_index):
         neg_samples_ex_index = np.delete(selected_neg_samples_index, i, axis=0)
         val = neg_samples[np.random.choice(neg_samples_ex_index, 1, replace=False)][0].item()
-        triplet_neg_anti_example.append(val)
+        triplet_pos_anchor_samples.append(val)
+ 
+    # step2: select negative anchor
+    triplet_neg_anchor_samples = []
+    selected_samples_index = selected_pos_samples_index + selected_neg_samples_index
+    total_samples = np.hstack((pos_samples, neg_samples))
+    for i, sel in enumerate(selected_samples_index):
+        pos = np.where(Y1[0, sel, :] == 1)[0].item()
+        index = np.delete(selected_samples_index, np.where(Y1[0, total_samples, pos] == 1)[0], axis=0)
+        val = np.random.choice(index, 1, replace=False)[0].item()
+        triplet_neg_anchor_samples.append(val)
 
-    triplet_pos_sel = selected_pos_samples + selected_neg_samples
-    triplet_neg_sel = triplet_pos_anti_samples + triplet_neg_anti_example
-
-    X2_pack = X2[:, triplet_pos_sel, :]
-    tripletY1_pack = np.dstack((Y1[:, triplet_pos_sel, :], Y1[:, triplet_neg_sel, :]))
-    tripletY2_pack = np.dstack((Y2[:, triplet_pos_sel, :], Y2[:, triplet_neg_sel, :]))
+    triplet_sel = triplet_original_samples + triplet_pos_anchor_samples + triplet_neg_anchor_samples
+    X2_pack = X2[:, triplet_sel, :]
+    tripletY1_pack = Y1[:, triplet_sel, :]
+    tripletY2_pack = Y2[:, triplet_sel, :]
 
     return X2_pack, tripletY1_pack, tripletY2_pack
 
-
 if __name__ == "__main__":
-
     sys.setrecursionlimit(40000)
 
     parser = OptionParser()
@@ -184,7 +194,7 @@ if __name__ == "__main__":
     num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
     rpn = nn.rpn(shared_layers, num_anchors)
 
-    classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), alpha=alpha, trainable=True)
+    classifier = nn.classifier_triplet_loss(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), alpha=alpha, trainable=True)
 
     model_rpn = Model(img_input, rpn[:2])
     model_classifier = Model([img_input, roi_input], classifier)
@@ -204,7 +214,8 @@ if __name__ == "__main__":
     optimizer_classifier = Adam(lr= 1e-4)
     model_rpn.compile(optimizer=optimizer, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
     model_classifier.compile(optimizer=optimizer_classifier,
-                             loss=[losses.class_triplet_loss_cls(len(classes_count)), losses.class_triplet_loss_regr(len(classes_count)-1)],
+                             loss=[losses.class_triplet_loss_cls(len(classes_count), C.num_rois),
+                                   losses.class_triplet_loss_regr(len(classes_count)-1, C.num_rois)],
                              metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
     model_all.compile(optimizer='sgd', loss='mae')
 

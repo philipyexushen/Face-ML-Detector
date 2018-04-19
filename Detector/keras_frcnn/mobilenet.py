@@ -306,3 +306,28 @@ def classifier(base_layers, input_rois, num_rois, nb_classes, alpha=1.0, depth_m
     out_regr = TimeDistributed(Dense(4 * (nb_classes-1), activation='linear', kernel_initializer='zero'),
                                name='dense_regress_{}'.format(nb_classes))(out)
     return [out_class, out_regr]
+
+def classifier_triplet_loss(base_layers, input_rois, num_rois, nb_classes, alpha=1.0, depth_multiplier=1, trainable=False):
+    # compile times on theano tend to be very high, so we use smaller ROI pooling regions to workaround
+    pooling_regions = -1
+    input_shape = -1
+    if K.backend() == 'tensorflow':
+        pooling_regions = 14
+        input_shape = (num_rois*3,14,14,1024)
+    elif K.backend() == 'theano':
+        pooling_regions = 7
+        input_shape = (num_rois*3,1024,7,7)
+
+    out_roi_pool = RoiPoolingConv(pooling_regions, num_rois*3)([base_layers, input_rois])
+
+    out = _depthwise_separable_conv_block_td(out_roi_pool, 1024, alpha, depth_multiplier, input_shape,
+                                             strides=(2, 2), block_id=12, trainable=trainable)
+    out = _depthwise_separable_conv_block_td(out, 1024, alpha, depth_multiplier, block_id=13, trainable=trainable)
+    out = TimeDistributed(AveragePooling2D((7, 7)), name='avg_pool')(out)
+    out = TimeDistributed(Flatten(), name='flatten')(out)
+    out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'),
+                                name='dense_class_{}'.format(nb_classes))(out)
+    # note: no regression target for bg class
+    out_regr = TimeDistributed(Dense(4 * (nb_classes-1), activation='linear', kernel_initializer='zero'),
+                               name='dense_regress_{}'.format(nb_classes))(out)
+    return [out_class, out_regr]

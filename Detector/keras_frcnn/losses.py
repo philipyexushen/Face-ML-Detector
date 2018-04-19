@@ -66,22 +66,37 @@ def class_loss_cls(y_true, y_pred):
 
 ALPHA_regr = 0.1
 
-def class_triplet_loss_regr(num_classes):
+def class_triplet_loss_regr(num_classes, num_rois):
     def class_loss_regr_fixed_num(y_true, y_pred):
-        pos_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*num_classes:4*2*num_classes] - y_pred), 2)
-        neg_loss = K.sum(y_true[:, :, :4*num_classes] * K.square(y_true[:, :, 4*3*num_classes:] - y_pred), 2)
+        original_anchor = y_pred[:, :num_rois, :]
+        positive_anchor = y_pred[:, num_rois:2*num_rois, :]
+        negative_anchor = y_pred[:, 2*num_rois:, :]
+
+        pos_loss = K.sum(
+            y_true[:, :num_rois, :4 * num_classes]
+            * y_true[:, num_rois:2*num_rois, :4 * num_classes]
+            * K.square(original_anchor - positive_anchor), 2)
+
+        neg_loss = K.sum(
+            y_true[:, :num_rois, :4 * num_classes]
+            * y_true[:, 2*num_rois:, :4 * num_classes]
+            * K.square(original_anchor - negative_anchor), 2)
 
         # y_true[:, :, :4*num_classes]前半部分对于pos和neg应该都是等同的
         return lambda_cls_regr * K.sum(K.maximum(pos_loss - neg_loss + ALPHA_regr, 0)) \
-               / K.sum(epsilon + y_true[:, :, :4*num_classes])
+               / K.sum(epsilon + y_true[:, :num_rois, :4*num_classes])
     return class_loss_regr_fixed_num
 
 
 ALPHA_cls = 0.1
-def class_triplet_loss_cls(num_classes):
-    def class_loss_regr_fixed_num(y_true, y_pred):
-        pos_loss = K.sum(K.square(y_true[:, :, :num_classes] - y_pred), 2)
-        neg_loss = K.sum(K.square(y_true[:, :, num_classes:] - y_pred), 2)
+def class_triplet_loss_cls(num_classes, num_rois):
+    def class_loss_cls_fixed_num(y_true, y_pred):
+        original_anchor = y_pred[:, :num_rois, :]
+        positive_anchor = y_pred[:, num_rois:2*num_rois, :]
+        negative_anchor = y_pred[:, 2*num_rois:, :]
+
+        pos_loss = K.sum(K.square(original_anchor - positive_anchor), 2)
+        neg_loss = K.sum(K.square(original_anchor - negative_anchor), 2)
 
         return lambda_cls_class * K.mean(K.maximum(pos_loss - neg_loss + ALPHA_cls, 0))
-    return class_loss_regr_fixed_num
+    return class_loss_cls_fixed_num
