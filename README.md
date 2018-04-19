@@ -1,6 +1,9 @@
 # Face-ML-Detector  
 + A toy in my deep learning study   
 
++ **April.19.2018**  
+Finished implement triplet loss
+
 + **March.26.2018**  
 Added yolo9000 retrain model, try to match my dataset successfully.  
 Unfortunetly, I have found that some of my contributions has loss in github.

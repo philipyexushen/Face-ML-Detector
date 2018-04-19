@@ -114,7 +114,7 @@ else:
     C.base_net_weights = C.model_path
 
 img_input = Input(shape=input_shape_img)
-roi_input = Input(shape=(C.num_rois, 4))
+roi_input = Input(shape=(C.num_rois*3, 4))
 feature_map_input = Input(shape=input_shape_features)
 
 # define the base network (resnet here, can be VGG, Inception, etc)
@@ -141,7 +141,7 @@ all_imgs = []
 
 classes = {}
 
-bbox_threshold = 0.1
+bbox_threshold = 0.5
 
 visualise = True
 #cap = cv2.VideoCapture(0)
@@ -192,9 +192,9 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
                 ROIs_padded[0, curr_shape[1]:, :] = ROIs[0, 0, :]
                 ROIs = ROIs_padded
 
+            ROIs = np.concatenate((ROIs, ROIs, ROIs), axis=1)
             [P_cls, P_regr] = model_classifier.predict([F, ROIs])
-
-            for ii in range(P_cls.shape[1]):
+            for ii in range(C.num_rois):
 
                 if np.max(P_cls[0, ii, :]) < bbox_threshold or np.argmax(P_cls[0, ii, :]) == (P_cls.shape[2] - 1):
                     continue
