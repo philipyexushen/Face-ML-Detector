@@ -21,7 +21,7 @@ parser = OptionParser()
 
 parser.add_option("-p", "--path", dest="test_path", help="Path to test data.")
 parser.add_option("-n", "--num_rois", type="int", dest="num_rois",
-                help="Number of ROIs per iteration. Higher means more memory use.", default=32)
+                help="Number of ROIs per iteration. Higher means more memory use.", default=128)
 parser.add_option("--config_filename", dest="config_filename", help=
                 "Location to read the metadata related to the training (generated when training).",
                 default="config.pickle")
@@ -141,21 +141,22 @@ all_imgs = []
 
 classes = {}
 
-bbox_threshold = 0.1
+bbox_threshold = 0.5
 
 visualise = True
-#cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0)
 
+'''
 for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff')):
         continue
     print(img_name)
     filepath = os.path.join(img_path,img_name)
-#while cap.isOpened():
-
+'''
+while cap.isOpened():
     try:
-        img = cv2.imread(filepath)
-        # _, img = cap.read()
+        #img = cv2.imread(filepath)
+        _, img = cap.read()
         st = common.Clock()
 
         X, ratio = format_img(img, C)
@@ -167,8 +168,9 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
         # 这里和train那里有点不一样，train那个rpn预测输出只有前两个，而test这里顺便把base_layer也给输出出来了，对于resnet50，这里是(None, None, 1024)
         [Y1, Y2, F] = model_rpn.predict(X)
 
-        R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=300)
-        # print('Elapsed time 2 = {}'.format(time.time() - st))
+        st1 = time.time()
+        R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=100)
+        print('Elapsed time 2 = {}'.format(time.time() - st1))
 
         # convert from (x1,y1,x2,y2) to (x,y,w,h)
         R[:, 2] -= R[:, 0]
@@ -225,7 +227,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
         for key in bboxes:
             bbox = np.array(bboxes[key])
 
-            new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.5, max_boxes=300)
+            new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.5, max_boxes=150)
             for jk in range(new_boxes.shape[0]):
                 (x1, y1, x2, y2) = new_boxes[jk,:]
 
@@ -260,7 +262,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
             img = cv2.resize(img, (height, width))
 
         cv2.imshow('Hargow Classifier', img)
-        cv2.waitKey(0)
+        cv2.waitKey(5)
     except Exception as e:
         print('Exception: {}'.format(e))
     # cv2.imwrite('./results_imgs/{}.png'.format(idx),img)

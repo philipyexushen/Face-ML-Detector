@@ -21,7 +21,7 @@ parser = OptionParser()
 
 parser.add_option("-p", "--path", dest="test_path", help="Path to test data.")
 parser.add_option("-n", "--num_rois", type="int", dest="num_rois",
-                help="Number of ROIs per iteration. Higher means more memory use.", default=32)
+                help="Number of ROIs per iteration. Higher means more memory use.", default=256)
 parser.add_option("--config_filename", dest="config_filename", help=
                 "Location to read the metadata related to the training (generated when training).",
                 default="config.pickle")
@@ -141,7 +141,7 @@ all_imgs = []
 
 classes = {}
 
-bbox_threshold = 0.5
+bbox_threshold = 0.7
 
 visualise = True
 #cap = cv2.VideoCapture(0)
@@ -200,6 +200,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
                     continue
 
                 cls_name = class_mapping[np.argmax(P_cls[0, ii, :])]
+
 
                 if cls_name not in bboxes:
                     bboxes[cls_name] = []
