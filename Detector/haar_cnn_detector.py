@@ -4,8 +4,12 @@ from CNNnetwork import *
 from common import *
 import ffmpeg
 import cv2.ocl as ocl
+import datetime
 
 _winName = "Hargow Classifier"
+
+_output_width = 640
+_output_height = 480
 
 def HaarDetector(model:Model, dataSet = None):
     def _CreateIdx2NameMap(dictNameLabel:dict):
@@ -22,9 +26,15 @@ def HaarDetector(model:Model, dataSet = None):
     cascade = cv.CascadeClassifier("./haar_detector/haarcascade_frontalface_alt2.xml")
     dictIdx2NameMap = _CreateIdx2NameMap(dataSet.dictNameLabel)
 
+    fourcc = cv.VideoWriter_fourcc(*'MJPG')
+    out = cv.VideoWriter('haar_cascadeClassifier_output.avi',fourcc, 20.0, (int(_output_width), int(_output_height)))
+
+    start_time = datetime.datetime.now()
+    num_frames = 0
+
     while cap.isOpened():
-        t1 = Clock()
         _, imgSrc = cap.read()
+        num_frames += 1
         imgGray = cv.cvtColor(imgSrc, cv.COLOR_BGR2GRAY)
         imgGray = cv.equalizeHist(imgGray)
 
@@ -41,9 +51,12 @@ def HaarDetector(model:Model, dataSet = None):
                     cv.putText(imgSrc, dictIdx2NameMap[resultLabelIdx], (x1, y1 + 20), cv.FONT_HERSHEY_SIMPLEX, 1.5,
                                (255, 0, 255), lineType=cv.LINE_AA, thickness=2)
 
-            dt = Clock() - t1
-            DrawStr(imgSrc, (10, 20), 'FPS: %.1f' % (1000 / (dt * 1000)))
+            elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
+            fps = num_frames / elapsed_time
+
+            DrawStr(imgSrc, (10, 20), 'FPS: %.1f' % fps)
             cv.imshow(_winName, imgSrc)
+            out.write(cv.resize(imgSrc, (int(_output_width), int(_output_height))))
         except:
             pass
 
@@ -51,6 +64,7 @@ def HaarDetector(model:Model, dataSet = None):
             break
 
     cap.release()
+    out.release()
     cv.destroyAllWindows()
 
 
