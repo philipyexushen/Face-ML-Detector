@@ -14,91 +14,96 @@ from keras_frcnn import data_generators
 from sklearn.metrics import average_precision_score
 from keras_frcnn.pascal_voc_parser import get_data
 import keras_frcnn.mobilenet as nn
+import math
+from sklearn.metrics import precision_recall_curve
+import matplotlib.pyplot as plt
 
 def get_map(pred, gt, f):
-	T = {}
-	P = {}
-	fx, fy = f
+    T = {}
+    P = {}
+    fx, fy = f
 
-	for bbox in gt:
-		bbox['bbox_matched'] = False
+    for bbox in gt:
+        bbox['bbox_matched'] = False
 
-	pred_probs = np.array([s['prob'] for s in pred])
-	box_idx_sorted_by_prob = np.argsort(pred_probs)[::-1]
+    pred_probs = np.array([s['prob'] for s in pred])
+    box_idx_sorted_by_prob = np.argsort(pred_probs)[::-1]
 
-	for box_idx in box_idx_sorted_by_prob:
-		pred_box = pred[box_idx]
-		pred_class = pred_box['class']
-		pred_x1 = pred_box['x1']
-		pred_x2 = pred_box['x2']
-		pred_y1 = pred_box['y1']
-		pred_y2 = pred_box['y2']
-		pred_prob = pred_box['prob']
-		if pred_class not in P:
-			P[pred_class] = []
-			T[pred_class] = []
-		P[pred_class].append(pred_prob)
-		found_match = False
+    for box_idx in box_idx_sorted_by_prob:
+        pred_box = pred[box_idx]
+        pred_class = pred_box['class']
+        pred_x1 = pred_box['x1']
+        pred_x2 = pred_box['x2']
+        pred_y1 = pred_box['y1']
+        pred_y2 = pred_box['y2']
+        pred_prob = pred_box['prob']
+        if pred_class not in P:
+            P[pred_class] = []
+            T[pred_class] = []
+        P[pred_class].append(pred_prob)
+        found_match = False
 
-		for gt_box in gt:
-			gt_class = gt_box['class']
-			gt_x1 = gt_box['x1']/fx
-			gt_x2 = gt_box['x2']/fx
-			gt_y1 = gt_box['y1']/fy
-			gt_y2 = gt_box['y2']/fy
-			gt_seen = gt_box['bbox_matched']
-			if gt_class != pred_class:
-				continue
-			if gt_seen:
-				continue
-			iou = data_generators.iou((pred_x1, pred_y1, pred_x2, pred_y2), (gt_x1, gt_y1, gt_x2, gt_y2))
-			if iou >= 0.5:
-				found_match = True
-				gt_box['bbox_matched'] = True
-				break
-			else:
-				continue
+        for gt_box in gt:
+            gt_class = gt_box['class']
+            gt_x1 = gt_box['x1']/fx
+            gt_x2 = gt_box['x2']/fx
+            gt_y1 = gt_box['y1']/fy
+            gt_y2 = gt_box['y2']/fy
+            gt_seen = gt_box['bbox_matched']
+            if gt_class != pred_class:
+                continue
+            if gt_seen:
+                continue
+            iou = data_generators.iou((pred_x1, pred_y1, pred_x2, pred_y2), (gt_x1, gt_y1, gt_x2, gt_y2))
+            if iou >= 0.5:
+                found_match = True
+                gt_box['bbox_matched'] = True
+                break
+            else:
+                continue
 
-		T[pred_class].append(int(found_match))
+        T[pred_class].append(int(found_match))
 
-	for gt_box in gt:
-		if not gt_box['bbox_matched'] and not gt_box['difficult']:
-			if gt_box['class'] not in P:
-				P[gt_box['class']] = []
-				T[gt_box['class']] = []
+    '''
+        for gt_box in gt:
+        if not gt_box['bbox_matched'] and not gt_box['difficult']:
+            if gt_box['class'] not in P:
+                P[gt_box['class']] = []
+                T[gt_box['class']] = []
 
-			T[gt_box['class']].append(1)
-			P[gt_box['class']].append(0)
+            T[gt_box['class']].append(1)
+            P[gt_box['class']].append(0)
+    '''
 
-	#import pdb
-	#pdb.set_trace()
-	return T, P
+    #import pdb
+    #pdb.set_trace()
+    return T, P
 
 
 def format_img(img, C):
-	img_min_side = float(C.im_size)
-	(height, width, _) = img.shape
+    img_min_side = float(C.im_size)
+    (height, width, _) = img.shape
 
-	if width <= height:
-		f = img_min_side / width
-		new_height = int(f * height)
-		new_width = int(img_min_side)
-	else:
-		f = img_min_side / height
-		new_width = int(f * width)
-		new_height = int(img_min_side)
-	fx = width / float(new_width)
-	fy = height / float(new_height)
-	img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
-	img = img[:, :, (2, 1, 0)]
-	img = img.astype(np.float32)
-	img[:, :, 0] -= C.img_channel_mean[0]
-	img[:, :, 1] -= C.img_channel_mean[1]
-	img[:, :, 2] -= C.img_channel_mean[2]
-	img /= C.img_scaling_factor
-	img = np.transpose(img, (2, 0, 1))
-	img = np.expand_dims(img, axis=0)
-	return img, fx, fy
+    if width <= height:
+        f = img_min_side / width
+        new_height = int(f * height)
+        new_width = int(img_min_side)
+    else:
+        f = img_min_side / height
+        new_width = int(f * width)
+        new_height = int(img_min_side)
+    fx = width / float(new_width)
+    fy = height / float(new_height)
+    img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
+    img = img[:, :, (2, 1, 0)]
+    img = img.astype(np.float32)
+    img[:, :, 0] -= C.img_channel_mean[0]
+    img[:, :, 1] -= C.img_channel_mean[1]
+    img[:, :, 2] -= C.img_channel_mean[2]
+    img /= C.img_scaling_factor
+    img = np.transpose(img, (2, 0, 1))
+    img = np.expand_dims(img, axis=0)
+    return img, fx, fy
 
 if __name__ == "__main__":
 
@@ -112,9 +117,6 @@ if __name__ == "__main__":
     parser.add_option("--config_filename", dest="config_filename", help=
                     "Location to read the metadata related to the training (generated when training).",
                     default="config.pickle")
-    parser.add_option("-o", "--parser", dest="parser", help="Parser to use. One of simple or pascal_voc",
-                    default="pascal_voc")
-    parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
     parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 
     (options, args) = parser.parse_args()
@@ -144,12 +146,11 @@ if __name__ == "__main__":
     class_to_color = {class_mapping[v]: np.random.randint(0, 255, 3) for v in class_mapping}
     C.num_rois = int(options.num_rois)
 
-    if K.image_dim_ordering() == 'th':
-        input_shape_img = (3, None, None)
-        input_shape_features = (1024, None, None)
-    else:
-        input_shape_img = (None, None, 3)
-        input_shape_features = (None, None, 1024)
+    input_shape_img = (None, None, 3)
+
+    alpha = 1
+    num_features = int(512 * alpha)
+    input_shape_features = (None, None, num_features)
 
     # check if weight path was passed via command line
     if options.input_weight_path:
@@ -162,14 +163,12 @@ if __name__ == "__main__":
     roi_input = Input(shape=(C.num_rois, 4))
     feature_map_input = Input(shape=input_shape_features)
 
-    # define the base network (resnet here, can be VGG, Inception, etc)
-    shared_layers = nn.nn_base(img_input, trainable=True)
+    shared_layers = nn.nn_base(img_input, alpha, trainable=True)
 
     # define the RPN, built on the base layers
     num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
     rpn_layers = nn.rpn(shared_layers, num_anchors)
-
-    classifier = nn.classifier(feature_map_input, roi_input, C.num_rois, nb_classes=len(class_mapping), trainable=True)
+    classifier = nn.classifier(feature_map_input, roi_input, C.num_rois, nb_classes=len(class_mapping), alpha=alpha, trainable=True)
 
     model_rpn = Model(img_input, rpn_layers)
     model_classifier_only = Model([feature_map_input, roi_input], classifier)
@@ -188,6 +187,7 @@ if __name__ == "__main__":
 
     T = {}
     P = {}
+
     for idx, img_data in enumerate(test_imgs):
         print('{}/{}'.format(idx,len(test_imgs)))
         filepath = img_data['filepath']
@@ -277,9 +277,41 @@ if __name__ == "__main__":
         for key in T.keys():
             ap = average_precision_score(T[key], P[key])
 
+            if math.isnan(ap):
+                continue
 
             print('{} AP: {}'.format(key, ap))
             all_aps.append(ap)
         print('mAP = {}'.format(np.mean(np.array(all_aps))))
         #print(T)
         #print(P)
+
+    figure_count = 0
+    for key in T.keys():
+        ap = average_precision_score(T[key], P[key])
+        precision, recall, _ = precision_recall_curve(T[key], P[key])
+
+        plt.figure(figure_count)
+        plt.step(recall, precision, color='b', alpha=0.2, where='post')
+        # plt.fill_between(recall, precision, step='post', alpha=0.2, color='b')
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.ylim([0.0, 1.05])
+        plt.xlim([0.0, 1.0])
+        plt.title('Precision-Recall curve: AP={0:0.2f}'.format(ap))
+        figure_count += 1
+
+    '''
+    precision, recall, _ = precision_recall_curve(T, P)
+    ap = average_precision_score(T, P)
+    plt.figure(figure_count)
+    plt.step(recall, precision, color='b', alpha=0.2, where='post')
+    # plt.fill_between(recall, precision, step='post', alpha=0.2, color='b')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 1.0])
+    plt.title('Multi Precision-Recall curve: AP={0:0.2f}'.format(ap))
+    '''
+
+    plt.show()
