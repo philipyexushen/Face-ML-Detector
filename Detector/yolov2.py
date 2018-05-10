@@ -45,6 +45,8 @@ parser.add_argument(
     help='threshold for non max suppression IOU, default .5',
     default=.5)
 
+_output_width = 640
+_output_height = 360
 
 def _main(args):
     model_path = os.path.expanduser(args.model_path)
@@ -101,7 +103,9 @@ def _main(args):
         score_threshold=args.score_threshold,
         iou_threshold=args.iou_threshold)
 
-    cap = cv.VideoCapture(0)
+    cap = cv.VideoCapture('.\yolo_test.mp4')
+    fourcc = cv.VideoWriter_fourcc(*'MJPG')
+    out = cv.VideoWriter('yolo_test_output.avi',fourcc, 20.0, (int(_output_width), int(_output_height)))
 
     while cap.isOpened():
         _, image = cap.read()
@@ -153,9 +157,13 @@ def _main(args):
         t2 = common.Clock() - t1
         common.DrawStr(image, (10, 20), 'FPS: %.1f' % (1000 // (t2 * 1000)))
         cv.imshow("Hargow Classifier", image)
+        out.write(image)
         if cv.waitKey(1) == 27:
             break
 
+    cap.release()
+    out.release()
+    cv.destroyAllWindows()
     sess.close()
 
 if __name__ == '__main__':

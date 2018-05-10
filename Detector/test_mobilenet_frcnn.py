@@ -14,6 +14,7 @@ from keras_frcnn import roi_helpers
 from keras.applications.mobilenet import MobileNet
 import keras_frcnn.mobilenet as nn
 import common
+import datetime
 
 sys.setrecursionlimit(40000)
 
@@ -21,7 +22,7 @@ parser = OptionParser()
 
 parser.add_option("-p", "--path", dest="test_path", help="Path to test data.")
 parser.add_option("-n", "--num_rois", type="int", dest="num_rois",
-                help="Number of ROIs per iteration. Higher means more memory use.", default=128)
+                help="Number of ROIs per iteration. Higher means more memory use.", default=32)
 parser.add_option("--config_filename", dest="config_filename", help=
                 "Location to read the metadata related to the training (generated when training).",
                 default="config.pickle")
@@ -146,31 +147,32 @@ bbox_threshold = 0.5
 visualise = True
 cap = cv2.VideoCapture(0)
 
-'''
+#C.im_size = 600
+
+start_time = datetime.datetime.now()
+num_frames = 0
+
 for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff')):
         continue
     print(img_name)
     filepath = os.path.join(img_path,img_name)
-'''
-while cap.isOpened():
-    try:
-        #img = cv2.imread(filepath)
-        _, img = cap.read()
-        st = common.Clock()
 
+# while cap.isOpened():
+    try:
+        img = cv2.imread(filepath)
+        #_, img = cap.read()
+        height, width = img.shape[:2]
         X, ratio = format_img(img, C)
 
         if K.image_dim_ordering() == 'tf':
             X = np.transpose(X, (0, 2, 3, 1))
 
         # get the feature maps and output from the RPN
-        # 这里和train那里有点不一样，train那个rpn预测输出只有前两个，而test这里顺便把base_layer也给输出出来了，对于resnet50，这里是(None, None, 1024)
-        [Y1, Y2, F] = model_rpn.predict(X)
-
         st1 = time.time()
-        R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=100)
-        print('Elapsed time 2 = {}'.format(time.time() - st1))
+        [Y1, Y2, F] = model_rpn.predict(X)
+        R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.7, max_boxes=300)
+        print('Elapsed time 1 = {}'.format(time.time() - st1))
 
         # convert from (x1,y1,x2,y2) to (x,y,w,h)
         R[:, 2] -= R[:, 0]
@@ -194,7 +196,9 @@ while cap.isOpened():
                 ROIs_padded[0, curr_shape[1]:, :] = ROIs[0, 0, :]
                 ROIs = ROIs_padded
 
+            st1 = time.time()
             [P_cls, P_regr] = model_classifier.predict([F, ROIs])
+            print('Elapsed time 2 = {}'.format(time.time() - st1))
 
             for ii in range(P_cls.shape[1]):
 
@@ -222,17 +226,17 @@ while cap.isOpened():
                 bboxes[cls_name].append([C.rpn_stride*x, C.rpn_stride*y, C.rpn_stride*(x+w), C.rpn_stride*(y+h)])
                 probs[cls_name].append(np.max(P_cls[0, ii, :]))
 
+
         all_dets = []
 
         for key in bboxes:
             bbox = np.array(bboxes[key])
 
-            new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.5, max_boxes=150)
+            new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.7, max_boxes=300)
             for jk in range(new_boxes.shape[0]):
                 (x1, y1, x2, y2) = new_boxes[jk,:]
 
                 (real_x1, real_y1, real_x2, real_y2) = get_real_coordinates(ratio, x1, y1, x2, y2)
-
                 cv2.rectangle(img,(real_x1, real_y1), (real_x2, real_y2), (int(class_to_color[key][0]), int(class_to_color[key][1]), int(class_to_color[key][2])),2)
 
                 textLabel = '{}: {}'.format(key,int(100*new_probs[jk]))
@@ -245,8 +249,12 @@ while cap.isOpened():
                 cv2.rectangle(img, (textOrg[0] - 5,textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
                 cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
-        t2 = common.Clock() - st
-        common.DrawStr(img, (10, 20), 'FPS %.1f' % (1000 /(t2 * 1000)))
+        num_frames += 1
+        elapsed_time = (datetime.datetime.now() -
+                        start_time).total_seconds()
+        fps = num_frames / elapsed_time
+
+        common.DrawStr(img, (10, 20), 'FPS %.1f' % fps)
         print(all_dets)
 
         width, height = img.shape[:2]
@@ -262,7 +270,9 @@ while cap.isOpened():
             img = cv2.resize(img, (height, width))
 
         cv2.imshow('Hargow Classifier', img)
-        cv2.waitKey(5)
+        cv2.waitKey(0)
+        #if cv2.waitKey(0) == 27:
+        #    break
+
     except Exception as e:
         print('Exception: {}'.format(e))
-    # cv2.imwrite('./results_imgs/{}.png'.format(idx),img)
