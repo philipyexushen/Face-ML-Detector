@@ -189,7 +189,7 @@ def draw_measure_curve(T:dict, P:dict, T_real, P_real, original_mapping):
     f1 = f1_score(T_real, P_real, average="macro")
     recall = recall_score(T_real, P_real, average="macro")
     precision = precision_score(T_real, P_real, average="macro")
-    print(f"key={key}, recall={recall}, precision={precision}, f1={f1}")
+    print(f"key=multi, recall={recall}, precision={precision}, f1={f1}")
 
     plt.show()
 
