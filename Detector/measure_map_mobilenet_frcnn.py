@@ -140,6 +140,16 @@ def make_binary_list(T_real, P_real, key, original_mapping):
         P_bin_real.append(int(P_is_key))
     return T_bin_real, P_bin_real
 
+def output_ap(T, P):
+    all_aps = []
+    for key in T.keys():
+        ap = average_precision_score(T[key], P[key])
+        if math.isnan(ap):
+            continue
+
+        print('{} AP: {}'.format(key, ap))
+        all_aps.append(ap)
+    print('mAP = {}'.format(np.mean(np.array(all_aps))))
 
 def draw_measure_curve(T:dict, P:dict, T_real, P_real, original_mapping):
     figure_count = 0
@@ -176,9 +186,9 @@ def draw_measure_curve(T:dict, P:dict, T_real, P_real, original_mapping):
         figure_count += 1
 
     # 多分类
-    f1 = f1_score(T_real, P_real)
-    recall = recall_score(T_real, P_real)
-    precision = precision_score(T_real, P_real)
+    f1 = f1_score(T_real, P_real, average="macro")
+    recall = recall_score(T_real, P_real, average="macro")
+    precision = precision_score(T_real, P_real, average="macro")
     print(f"key={key}, recall={recall}, precision={precision}, f1={f1}")
 
     plt.show()
@@ -237,6 +247,7 @@ if __name__ == "__main__":
         print(f"use data in {measure_mAP_filename}")
         with open(measure_mAP_filename, 'rb') as f_measure_mAP:
             TP_obj = pickle.load(f_measure_mAP)
+            output_ap(TP_obj[0], TP_obj[1])
             draw_measure_curve(TP_obj[0], TP_obj[1], TP_obj[2], TP_obj[3], original_mapping)
             exit(0)
 
@@ -373,18 +384,8 @@ if __name__ == "__main__":
                     P[key] = []
                 T[key].extend(t[key])
                 P[key].extend(p[key])
-            all_aps = []
-            for key in T.keys():
-                ap = average_precision_score(T[key], P[key])
 
-                if math.isnan(ap):
-                    continue
-
-                print('{} AP: {}'.format(key, ap))
-                all_aps.append(ap)
-            print('mAP = {}'.format(np.mean(np.array(all_aps))))
-            # print(T)
-            # print(P)
+            output_ap(T, P)
         except Exception as e:
             print(f"Some exception occur! But we don`t care, {e}")
 
