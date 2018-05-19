@@ -9,6 +9,7 @@ from keras.models import Model
 from keras_frcnn import roi_helpers
 from pascal_voc_parser import get_data
 import keras_frcnn.mobilenet as nn
+import traceback
 
 from common_measure_method import get_map
 from common_measure_method import draw_measure_curve
@@ -63,7 +64,6 @@ if __name__ == "__main__":
     original_mapping = class_mapping
     class_mapping = {v: k for k, v in class_mapping.items()}
     print(class_mapping)
-    class_to_color = {class_mapping[v]: np.random.randint(0, 255, 3) for v in class_mapping}
     C.num_rois = int(options.num_rois)
 
     if use_store_data == '1':

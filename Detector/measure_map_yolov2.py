@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 """Run a YOLO_v2 style detection model on test images."""
 import argparse
-import colorsys
 import os
 import random
 
@@ -16,6 +15,9 @@ from common_measure_method import get_map
 from common_measure_method import output_ap
 from common_measure_method import draw_measure_curve
 from yad2k.models.keras_yolo import yolo_eval, yolo_head
+import pickle
+import traceback
+import sys
 
 parser = argparse.ArgumentParser(
     description='Run a YOLO_v2 style detection model on test images..')
@@ -34,12 +36,6 @@ parser.add_argument(
     help='path to classes file, defaults to coco_classes.txt',
     default='model_data/coco_classes.txt')
 parser.add_argument(
-    '-s',
-    '--score_threshold',
-    type=float,
-    help='threshold for bounding box scores, default .3',
-    default=.3)
-parser.add_argument(
     '-iou',
     '--iou_threshold',
     type=float,
@@ -51,6 +47,18 @@ parser.add_argument(
     '--test_path',
     help='image_test_path',)
 
+parser.add_argument(
+    "-usd",
+    "--use_store_data",
+    help="use_store_data",
+    default="0")
+
+parser.add_argument(
+    "-mAPFile",
+    "--measure_mAP_filename",
+    help="Location to store measure mAP file",
+    default="measure_mAP_yolo.pickle")
+
 def _main(args):
     model_path = os.path.expanduser(args.model_path)
     assert model_path.endswith('.h5'), 'Keras model must be a .h5 file.'
@@ -60,8 +68,9 @@ def _main(args):
     sess = K.get_session()
 
     with open(classes_path) as f:
-        class_names = f.readlines()
-    class_names = [c.strip() for c in class_names]
+        yolo_class_names = f.readlines()
+    yolo_class_names = [c.strip() for c in yolo_class_names]
+    print(yolo_class_names)
 
     with open(anchors_path) as f:
         anchors = f.readline()
@@ -71,42 +80,52 @@ def _main(args):
     yolo_model = load_model(model_path)
 
     # Verify model, anchors, and classes are compatible
-    num_classes = len(class_names)
+    num_yolo_classes = len(yolo_class_names)
     num_anchors = len(anchors)
     model_output_channels = yolo_model.layers[-1].output_shape[-1]
-    assert model_output_channels == num_anchors * (num_classes + 5), \
+    assert model_output_channels == num_anchors * (num_yolo_classes + 5), \
         'Mismatch between model and given anchor and class sizes. ' \
         'Specify matching anchors and classes with --anchors_path and ' \
         '--classes_path flags.'
     print('{} model, anchors, and classes loaded.'.format(model_path))
-
-    # Check if model is fully convolutional, assuming channel last order.
     model_image_size = yolo_model.layers[0].input_shape[1:3]
-    is_fixed_size = model_image_size != (None, None)
-
-    # Generate colors for drawing bounding boxes.
-    hsv_tuples = [(x / len(class_names), 1., 1.)
-                  for x in range(len(class_names))]
-    colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-    colors = list(
-        map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
-            colors))
-    random.seed(10101)  # Fixed seed for consistent colors across runs.
-    random.shuffle(colors)  # Shuffle colors to decorrelate adjacent classes.
-    random.seed(None)  # Reset seed to default.
 
     # Generate output tensor targets for filtered bounding boxes.
-    yolo_outputs = yolo_head(yolo_model.output, anchors, len(class_names))
+    yolo_outputs = yolo_head(yolo_model.output, anchors, len(yolo_class_names))
     input_image_shape = K.placeholder(shape=(2, ))
     boxes, scores, classes = yolo_eval(
         yolo_outputs,
         input_image_shape,
-        score_threshold=args.score_threshold,
+        max_boxes=10,
+        score_threshold=0.01,
         iou_threshold=args.iou_threshold)
 
     test_path = os.path.expanduser(args.test_path)
-    all_imgs, _, _ = get_data(test_path)
+    all_imgs, classes_count, class_mapping = get_data(test_path)
     test_imgs = [s for s in all_imgs if s['imageset'] == 'test']
+
+    if 'bg' not in class_mapping:
+        class_mapping['bg'] = len(class_mapping)
+
+    original_mapping = class_mapping
+    class_mapping = {v: k for k, v in class_mapping.items()}
+    print(class_mapping)
+
+    use_store_data = os.path.expanduser(args.use_store_data)
+    measure_mAP_filename = os.path.expanduser(args.measure_mAP_filename)
+
+    if use_store_data == '1':
+        print(f"use data in {measure_mAP_filename}")
+        with open(measure_mAP_filename, 'rb') as f_measure_mAP:
+            TP_obj = pickle.load(f_measure_mAP)
+            output_ap(TP_obj[0], TP_obj[1])
+            draw_measure_curve(TP_obj[0], TP_obj[1], TP_obj[2], TP_obj[3], original_mapping)
+            exit(0)
+
+    T = {}
+    P = {}
+    T_real = []
+    P_real = []
 
     for idx, img_data in enumerate(test_imgs):
         try:
@@ -135,23 +154,51 @@ def _main(args):
                     K.learning_phase(): 0
                 })
 
+            all_dets = []
             for i, c in reversed(list(enumerate(out_classes))):
-                predicted_class = class_names[c]
+                predicted_class = yolo_class_names[c]
+
+                if not predicted_class in original_mapping.keys():
+                    continue
                 box = out_boxes[i]
                 score = out_scores[i]
-
-                textLabel = '{} {:.2f}'.format(predicted_class, score)
 
                 top, left, bottom, right = box
                 top = max(0, np.floor(top + 0.5).astype('int32'))
                 left = max(0, np.floor(left + 0.5).astype('int32'))
                 bottom = min(image_size[0], np.floor(bottom + 0.5).astype('int32'))
                 right = min(image_size[1], np.floor(right + 0.5).astype('int32'))
-                print(textLabel, (left, top), (right, bottom))
 
+                det = {'x1': left, 'x2': right, 'y1': top, 'y2': bottom, 'class': predicted_class, 'prob': score}
+                all_dets.append(det)
 
+            # Yolov2这个算法已经在输出的时候调了大小了，所以不用缩放
+            t, p, t_real, p_real = get_map(all_dets, img_data['bboxes'], (1.0, 1.0), original_mapping)
+            T_real += t_real
+            P_real += p_real
+
+            for key in t.keys():
+                if key not in T:
+                    T[key] = []
+                    P[key] = []
+                T[key].extend(t[key])
+                P[key].extend(p[key])
+
+            output_ap(T, P)
+        except AssertionError as e:
+            _, _, tb = sys.exc_info()
+            traceback.print_tb(tb)  # Fixed format
+            tb_info = traceback.extract_tb(tb)
+            filename, line, func, text = tb_info[-1]
+
+            print('An error occurred on line {} in statement {}'.format(line, text))
         except Exception as e:
             print(f"Some exception occur!\n\r {e} \n we don't care")
+
+    TP_obj = [T, P, T_real, P_real]
+    with open(measure_mAP_filename, "wb") as f_measure_mAP:
+        pickle.dump(TP_obj, f_measure_mAP)
+    draw_measure_curve(T, P, T_real, P_real, original_mapping)
 
     sess.close()
 

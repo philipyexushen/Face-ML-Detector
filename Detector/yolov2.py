@@ -102,9 +102,10 @@ def _main(args):
         score_threshold=args.score_threshold,
         iou_threshold=args.iou_threshold)
 
-    cap = cv.VideoCapture('.\yolo_test.mp4')
-    fourcc = cv.VideoWriter_fourcc(*'MJPG')
-    out = cv.VideoWriter('yolo_test_output.avi',fourcc, 20.0, (int(_output_width), int(_output_height)))
+    # cap = cv.VideoCapture('.\yolo_test.mp4')
+    cap = cv.VideoCapture(0)
+    # fourcc = cv.VideoWriter_fourcc(*'MJPG')
+    # out = cv.VideoWriter('yolo_test_output.avi',fourcc, 20.0, (int(_output_width), int(_output_height)))
 
     while cap.isOpened():
         _, image = cap.read()
@@ -156,12 +157,12 @@ def _main(args):
         t2 = common.Clock() - t1
         common.draw_str(image, (10, 20), 'FPS: %.1f' % (1000 // (t2 * 1000)))
         cv.imshow("Hargow Classifier", image)
-        out.write(image)
+        # out.write(image)
         if cv.waitKey(1) == 27:
             break
 
     cap.release()
-    out.release()
+    # out.release()
     cv.destroyAllWindows()
     sess.close()
 
