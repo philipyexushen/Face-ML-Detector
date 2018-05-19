@@ -8,6 +8,7 @@ from sklearn.metrics import average_precision_score
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from xlsx_file_writer import CXlsFileWriter
 
 class PrivateMethod:
     @staticmethod

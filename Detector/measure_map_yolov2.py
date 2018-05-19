@@ -97,7 +97,7 @@ def _main(args):
         yolo_outputs,
         input_image_shape,
         max_boxes=10,
-        score_threshold=0.01,
+        score_threshold=0.00,
         iou_threshold=args.iou_threshold)
 
     test_path = os.path.expanduser(args.test_path)
