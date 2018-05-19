@@ -8,7 +8,7 @@ from optparse import OptionParser
 import pickle
 
 from keras import backend as K
-from keras.optimizers import Adam, SGD, RMSprop
+from keras.optimizers import Adam
 from keras.layers import Input
 from keras.models import Model
 from keras_frcnn import config, data_generators
@@ -16,7 +16,7 @@ from keras_frcnn import losses as losses
 import keras_frcnn.roi_helpers as roi_helpers
 from keras.utils import generic_utils
 from keras_frcnn import mobilenet as nn
-from keras_frcnn.pascal_voc_parser import get_data
+from pascal_voc_parser import get_data
 from lxml import etree
 
 def save_result_in_html(mean_overlapping_bboxes, class_acc, loss_rpn_cls, loss_rpn_regr ,loss_class_cls ,loss_class_regr, start_time):
@@ -166,7 +166,7 @@ except:
         https://github.com/fchollet/keras/tree/master/keras/applications')
 
 optimizer = Adam(lr= 1e-5)
-optimizer_classifier = Adam(lr= 1e-4)
+optimizer_classifier = Adam(lr= 1e-5)
 model_rpn.compile(optimizer=optimizer, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
 model_classifier.compile(optimizer=optimizer_classifier, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)],
                          metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
@@ -198,7 +198,7 @@ for epoch_num in range(num_epochs):
             loss_rpn = model_rpn.train_on_batch(X, Y)
 
             P_rpn = model_rpn.predict_on_batch(X)
-            R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.80, max_boxes=300)
+            R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.83, max_boxes=350)
 
             # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
             X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data, C, class_mapping)

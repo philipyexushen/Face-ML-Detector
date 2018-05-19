@@ -208,7 +208,7 @@ def _main(args):
             cv.putText(image, textLabel, textOrg, cv.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
         t2 = common.Clock() - t1
-        common.DrawStr(image, (10, 20), 'FPS: %.1f' % (1000 // (t2 * 1000)))
+        common.draw_str(image, (10, 20), 'FPS: %.1f' % (1000 // (t2 * 1000)))
         cv.imshow("Hargow Classifier", image)
         if cv.waitKey(1) == 27:
             break

@@ -7,7 +7,6 @@ from . import data_augment
 import threading
 import itertools
 
-
 # 求并集，注意是面积的并集，这里的求法就是简单的两个面积相加然后减去交集的面积而已
 def union(au, bu, area_intersection):
 	area_a = (au[2] - au[0]) * (au[3] - au[1])

@@ -138,15 +138,15 @@ def CaptureTrainingSet(outputType = OutputSimpleFace):
         imgGray = cv.equalizeHist(imgGray)
 
         t1 = Clock()
-        rects = FindHaarRect(imgGray, cascade)
+        rects = find_haar_rect(imgGray, cascade)
         _StoreCap(img, rects, numCapture, strLabelName, outputType)
         vis = img.copy()
         _DrawRects(vis, rects, (0, 255, 0))
 
         dt = Clock() - t1
 
-        DrawStr(vis, (20, 20), 'time: %.1f ms' % (dt * 1000))
-        DrawStr(vis, (20, 40), f"Have captured {numCapture[0]} faces")
+        draw_str(vis, (20, 20), 'time: %.1f ms' % (dt * 1000))
+        draw_str(vis, (20, 40), f"Have captured {numCapture[0]} faces")
         cv.imshow("Image Collector", vis)
         if cv.waitKey(5) == 27:
             break

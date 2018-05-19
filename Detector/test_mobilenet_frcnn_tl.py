@@ -14,6 +14,7 @@ from keras_frcnn import roi_helpers
 from keras.applications.mobilenet import MobileNet
 import keras_frcnn.mobilenet as nn
 import common
+from img_formater import format_img
 
 sys.setrecursionlimit(40000)
 
@@ -44,42 +45,6 @@ C.use_vertical_flips = False
 C.rot_90 = False
 
 img_path = options.test_path
-
-# 这里要注意的是，传进去的图片要调整一下，最小值都是一个定值（但是比值不变，因为理论上RPN是可以传入任意大小的图片的）
-def format_img_size(img, C):
-    """ formats the image size based on config """
-    img_min_side = float(C.im_size)
-    (height,width,_) = img.shape
-        
-    if width <= height:
-        ratio = img_min_side/width
-        new_height = int(ratio * height)
-        new_width = int(img_min_side)
-    else:
-        ratio = img_min_side/height
-        new_width = int(ratio * width)
-        new_height = int(img_min_side)
-    img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
-    return img, ratio   
-
-# 归一化，主要是让数据有正负值，这样会表现的好一点
-def format_img_channels(img, C):
-    """ formats the image channels based on config """
-    img = img[:, :, (2, 1, 0)]
-    img = img.astype(np.float32)
-    img[:, :, 0] -= C.img_channel_mean[0]
-    img[:, :, 1] -= C.img_channel_mean[1]
-    img[:, :, 2] -= C.img_channel_mean[2]
-    img /= C.img_scaling_factor
-    img = np.transpose(img, (2, 0, 1))
-    img = np.expand_dims(img, axis=0)
-    return img
-
-def format_img(img, C):
-    """ formats an image for model prediction based on config """
-    img, ratio = format_img_size(img, C)
-    img = format_img_channels(img, C)
-    return img, ratio
 
 # Method to transform the coordinates of the bounding box to its original size
 def get_real_coordinates(ratio, x1, y1, x2, y2):
@@ -144,18 +109,22 @@ classes = {}
 bbox_threshold = 0.7
 
 visualise = True
-#cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0)
 
+'''
 for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff')):
         continue
     print(img_name)
     filepath = os.path.join(img_path,img_name)
-#while cap.isOpened():
+'''
+while cap.isOpened():
 
     try:
-        img = cv2.imread(filepath)
-        # _, img = cap.read()
+        #img = cv2.imread(filepath)
+
+        _, img = cap.read()
+        img = cv2.resize(img, (320, 180))
         st = common.Clock()
 
         X, ratio = format_img(img, C)
@@ -167,7 +136,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
         # 这里和train那里有点不一样，train那个rpn预测输出只有前两个，而test这里顺便把base_layer也给输出出来了，对于resnet50，这里是(None, None, 1024)
         [Y1, Y2, F] = model_rpn.predict(X)
 
-        R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=300)
+        R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.80, max_boxes=120)
         # print('Elapsed time 2 = {}'.format(time.time() - st))
 
         # convert from (x1,y1,x2,y2) to (x,y,w,h)
@@ -226,7 +195,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
         for key in bboxes:
             bbox = np.array(bboxes[key])
 
-            new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.5, max_boxes=300)
+            new_boxes, new_probs = roi_helpers.non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.5, max_boxes=120)
             for jk in range(new_boxes.shape[0]):
                 (x1, y1, x2, y2) = new_boxes[jk,:]
 
@@ -245,7 +214,7 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
                 cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
         t2 = common.Clock() - st
-        common.DrawStr(img, (10, 20), 'FPS %.1f' % (1000 /(t2 * 1000)))
+        common.draw_str(img, (10, 20), 'FPS %.1f' % (1000 / (t2 * 1000)))
         print(all_dets)
 
         width, height = img.shape[:2]
@@ -261,7 +230,9 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
             img = cv2.resize(img, (height, width))
 
         cv2.imshow('Hargow Classifier', img)
-        cv2.waitKey(0)
+        if cv2.waitKey(5) & 0xFF == ord('q'):
+            break
+
     except Exception as e:
         print('Exception: {}'.format(e))
     # cv2.imwrite('./results_imgs/{}.png'.format(idx),img)

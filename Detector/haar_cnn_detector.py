@@ -38,7 +38,7 @@ def HaarDetector(model:Model, dataSet = None):
         imgGray = cv.cvtColor(imgSrc, cv.COLOR_BGR2GRAY)
         imgGray = cv.equalizeHist(imgGray)
 
-        rects = FindHaarRect(imgGray, cascade)
+        rects = find_haar_rect(imgGray, cascade)
         try:
             if len(rects) > 0:
                 for x1, y1, x2, y2 in rects:
@@ -54,7 +54,7 @@ def HaarDetector(model:Model, dataSet = None):
             elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
             fps = num_frames / elapsed_time
 
-            DrawStr(imgSrc, (10, 20), 'FPS: %.1f' % fps)
+            draw_str(imgSrc, (10, 20), 'FPS: %.1f' % fps)
             cv.imshow(_winName, imgSrc)
             out.write(cv.resize(imgSrc, (int(_output_width), int(_output_height))))
         except:
